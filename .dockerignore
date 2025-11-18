@@ -1,0 +1,54 @@
+# Dockerignore file for Synalix AI
+
+# Version control
+.git
+.gitignore
+
+# IDE files
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# Build outputs
+build/
+target/
+out/
+
+# Gradle
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Documentation
+*.md
+docs/
+
+# Docker files (not needed in build context)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Test reports
+reports/
+test-results/
