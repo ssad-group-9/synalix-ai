@@ -1,16 +1,19 @@
 package ai.synalix.synalixai.controller;
 
+import ai.synalix.synalixai.config.JwtAuthenticationFilter;
+import ai.synalix.synalixai.config.JwtUserPrincipal;
 import ai.synalix.synalixai.dto.user.*;
 import ai.synalix.synalixai.entity.User;
+import ai.synalix.synalixai.enums.ApiErrorCode;
 import ai.synalix.synalixai.enums.UserStatus;
+import ai.synalix.synalixai.exception.ApiException;
 import ai.synalix.synalixai.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,15 +39,15 @@ public class UserController {
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CreateUserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-        UUID operatorId = getCurrentUserId();
-        
-        // Generate random password if not provided
-        String password = (request.getPassword() != null && !request.getPassword().trim().isEmpty()) 
-            ? request.getPassword() 
-            : generateRandomPassword();
-        
-        User createdUser = userService.createUser(
+    public ResponseEntity<CreateUserResponse> createUser(
+        @Valid @RequestBody CreateUserRequest request,
+        @AuthenticationPrincipal JwtUserPrincipal principal) {
+        var operatorId = principal.getId();
+
+        // Generate random password
+        var password = generateRandomPassword();
+
+        var createdUser = userService.createUser(
             request.getUsername(),
             password,
             request.getNickname(),
@@ -52,10 +55,10 @@ public class UserController {
             request.getRole(),
             operatorId
         );
-        
-        UserResponse userResponse = convertToUserResponse(createdUser);
-        CreateUserResponse response = new CreateUserResponse(userResponse, password);
-        
+
+        var userResponse = convertToUserResponse(createdUser);
+        var response = new CreateUserResponse(userResponse, password);
+
         return ResponseEntity.ok(response);
     }
 
@@ -65,11 +68,11 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
-        List<UserResponse> responses = users.stream()
+        var users = userService.getAllUsers();
+        var responses = users.stream()
                 .map(this::convertToUserResponse)
                 .collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(responses);
     }
 
@@ -79,9 +82,9 @@ public class UserController {
     @GetMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
     public ResponseEntity<UserResponse> getUserById(@PathVariable UUID userId) {
-        User user = userService.getUserById(userId);
-        UserResponse response = convertToUserResponse(user);
-        
+        var user = userService.getUserById(userId);
+        var response = convertToUserResponse(user);
+
         return ResponseEntity.ok(response);
     }
 
@@ -89,11 +92,11 @@ public class UserController {
      * Get current user profile
      */
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUserProfile() {
-        UUID currentUserId = getCurrentUserId();
-        User user = userService.getUserById(currentUserId);
-        UserResponse response = convertToUserResponse(user);
-        
+    public ResponseEntity<UserResponse> getCurrentUserProfile(@AuthenticationPrincipal JwtUserPrincipal principal) {
+        var currentUserId = principal.getId();
+        var user = userService.getUserById(currentUserId);
+        var response = convertToUserResponse(user);
+
         return ResponseEntity.ok(response);
     }
 
@@ -104,29 +107,20 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable UUID userId,
-            @Valid @RequestBody UpdateUserRequest request) {
-        
-        UUID operatorId = getCurrentUserId();
-        User updatedUser;
-        
-        // Check if it's admin updating role/status or user updating own profile
-        if (hasAdminRole() && (request.getRole() != null || request.getEnabled() != null)) {
-            // Admin can update role and status
-            updatedUser = userService.updateUserRole(userId, request.getRole(), operatorId);
-            if (request.getEnabled() != null) {
-                UserStatus newStatus = request.getEnabled() ? UserStatus.ENABLED : UserStatus.DISABLED;
-                updatedUser = userService.updateUserStatus(userId, newStatus, operatorId);
-            }
-        }
-        
+            @Valid @RequestBody UpdateUserRequest request,
+            @AuthenticationPrincipal JwtUserPrincipal principal) {
+
+        var operatorId = principal.getId();
+
         // Update basic information (nickname, email)
-        if (request.getNickname() != null || request.getEmail() != null) {
-            updatedUser = userService.updateUserInfo(userId, request.getNickname(), request.getEmail(), operatorId);
-        } else {
-            updatedUser = userService.getUserById(userId);
-        }
-        
-        UserResponse response = convertToUserResponse(updatedUser);
+        var updatedUser = userService.updateUserInfo(
+            userId,
+            request.getNickname(),
+            request.getEmail(),
+            operatorId
+        );
+
+        var response = convertToUserResponse(updatedUser);
         return ResponseEntity.ok(response);
     }
 
@@ -135,38 +129,22 @@ public class UserController {
      */
     @PutMapping("/me")
     public ResponseEntity<UserResponse> updateCurrentUserProfile(
-            @Valid @RequestBody UpdateUserRequest request) {
-        
-        UUID currentUserId = getCurrentUserId();
-        
+            @Valid @RequestBody UpdateUserRequest request,
+            @AuthenticationPrincipal JwtUserPrincipal principal
+    ) {
+
+        var currentUserId = principal.getId();
+
         // Regular users can only update nickname and email
-        User updatedUser = userService.updateUserInfo(
-            currentUserId, 
-            request.getNickname(), 
-            request.getEmail(), 
+        var updatedUser = userService.updateUserInfo(
+            currentUserId,
+            request.getNickname(),
+            request.getEmail(),
             currentUserId
         );
-        
-        UserResponse response = convertToUserResponse(updatedUser);
-        return ResponseEntity.ok(response);
-    }
 
-    /**
-     * Change password
-     */
-    @PostMapping("/{userId}/change-password")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
-    public ResponseEntity<Void> changePassword(
-            @PathVariable UUID userId,
-            @Valid @RequestBody ChangePasswordRequest request) {
-        
-        userService.changePassword(
-            userId, 
-            request.getOldPassword(), 
-            request.getNewPassword()
-        );
-        
-        return ResponseEntity.ok(null);
+        var response = convertToUserResponse(updatedUser);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -174,40 +152,47 @@ public class UserController {
      */
     @PostMapping("/me/change-password")
     public ResponseEntity<Void> changeCurrentUserPassword(
-            @Valid @RequestBody ChangePasswordRequest request) {
-        
-        UUID currentUserId = getCurrentUserId();
-        
+            @Valid @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal JwtUserPrincipal principal) {
+
+        var currentUserId = principal.getId();
+
         userService.changePassword(
-            currentUserId, 
-            request.getOldPassword(), 
+            currentUserId,
+            request.getOldPassword(),
             request.getNewPassword()
         );
-        
+
         return ResponseEntity.ok(null);
     }
 
     /**
-     * Enable user (Admin only)
+     * Enable/disable user (Admin only)
      */
-    @PostMapping("/{userId}/enable")
+    @PostMapping("/{userId}/enabled")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> enableUser(@PathVariable UUID userId) {
-        UUID operatorId = getCurrentUserId();
-        userService.updateUserStatus(userId, UserStatus.ENABLED, operatorId);
-        
+    public ResponseEntity<Void> enableUser(
+            @PathVariable UUID userId,
+            @Valid @RequestBody UpdateUserEnabledRequest request,
+            @AuthenticationPrincipal JwtUserPrincipal principal) {
+        var operatorId = principal.getId();
+        userService.updateUserStatus(userId, request.getEnabled() ? UserStatus.ENABLED : UserStatus.DISABLED, operatorId);
+
         return ResponseEntity.ok(null);
     }
 
     /**
-     * Disable user (Admin only)
+     * Update user role (Admin only)
      */
-    @PostMapping("/{userId}/disable")
+    @PostMapping("/{userId}/role")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> disableUser(@PathVariable UUID userId) {
-        UUID operatorId = getCurrentUserId();
-        userService.updateUserStatus(userId, UserStatus.DISABLED, operatorId);
-        
+    public ResponseEntity<Void> updateUserRole(
+            @PathVariable UUID userId,
+            @Valid @RequestBody UpdateUserRoleRequest request,
+            @AuthenticationPrincipal JwtUserPrincipal principal) {
+        var operatorId = principal.getId();
+        userService.updateUserRole(userId, request.getRole(), operatorId);
+
         return ResponseEntity.ok(null);
     }
 
@@ -216,10 +201,12 @@ public class UserController {
      */
     @DeleteMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteUser(@PathVariable UUID userId) {
-        UUID operatorId = getCurrentUserId();
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal JwtUserPrincipal principal) {
+        var operatorId = principal.getId();
         userService.deleteUser(userId, operatorId);
-        
+
         return ResponseEntity.ok(null);
     }
 
@@ -228,44 +215,25 @@ public class UserController {
      */
     @PostMapping("/{userId}/reset-password")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> resetUserPassword(@PathVariable UUID userId) {
-        UUID operatorId = getCurrentUserId();
-        
+    public ResponseEntity<String> resetUserPassword(
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal JwtUserPrincipal principal) {
+        var operatorId = principal.getId();
+
         // Generate a random password
-        String newPassword = generateRandomPassword();
+        var newPassword = generateRandomPassword();
         userService.resetPassword(userId, newPassword, operatorId);
-        
+
         return ResponseEntity.ok(newPassword);
-    }
-
-    // Helper methods
-
-    /**
-     * Get current authenticated user ID
-     */
-    private UUID getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        // Assuming the principal contains user ID or we can extract it
-        // This might need adjustment based on your JWT implementation
-        return UUID.fromString(authentication.getName());
-    }
-
-    /**
-     * Check if current user has admin role
-     */
-    private boolean hasAdminRole() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
     }
 
     /**
      * Generate random password for password reset
      */
     private String generateRandomPassword() {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-        StringBuilder password = new StringBuilder();
-        java.util.Random random = new java.util.Random();
+        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        var password = new StringBuilder();
+        var random = new java.util.Random();
         
         for (int i = 0; i < 12; i++) {
             password.append(chars.charAt(random.nextInt(chars.length())));

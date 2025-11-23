@@ -1,6 +1,5 @@
 package ai.synalix.synalixai.dto.user;
 
-import ai.synalix.synalixai.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -22,7 +21,4 @@ public class UpdateUserRequest {
     @Size(max = 255, message = "Email cannot exceed 255 characters")
     private String email;
 
-    private UserRole role;
-
-    private Boolean enabled;
 }

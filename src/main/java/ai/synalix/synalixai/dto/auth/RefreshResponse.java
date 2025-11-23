@@ -6,17 +6,14 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 /**
- * Login response DTO
+ * Refresh response DTO
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginResponse {
+public class RefreshResponse {
 
     @ToString.Exclude
     private String accessToken;
-
-    @ToString.Exclude
-    private String refreshToken;
 
 }

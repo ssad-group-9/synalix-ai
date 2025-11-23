@@ -23,7 +23,5 @@ public class AuditLogResponse {
     private String resourceType;
     private String resourceId;
     private Map<String, Object> details;
-    private String ipAddress;
-    private String userAgent;
     private LocalDateTime timestamp;
 }

@@ -19,7 +19,7 @@ public class AsyncConfig {
      */
     @Bean(name = "taskExecutor")
     public Executor taskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        var executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(2);
         executor.setMaxPoolSize(10);
         executor.setQueueCapacity(100);
@@ -34,7 +34,7 @@ public class AsyncConfig {
      */
     @Bean(name = "auditTaskExecutor")
     public Executor auditTaskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        var executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(1);
         executor.setMaxPoolSize(5);
         executor.setQueueCapacity(50);

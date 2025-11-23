@@ -15,12 +15,7 @@ import java.util.UUID;
  * Refresh token entity class
  */
 @Entity
-@Table(name = "refresh_tokens", 
-       indexes = {
-           @Index(name = "idx_refresh_token", columnList = "token"),
-           @Index(name = "idx_user_id", columnList = "user_id"),
-           @Index(name = "idx_expires_at", columnList = "expires_at")
-       })
+@Table(name = "refresh_tokens")
 @Data
 @NoArgsConstructor
 public class RefreshToken {

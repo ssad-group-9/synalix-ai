@@ -30,7 +30,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
     /**
      * Find audit logs by resource ID
      */
-    List<AuditLog> findByResourceIdOrderByTimestampDesc(UUID resourceId);
+    List<AuditLog> findByResourceIdOrderByTimestampDesc(String resourceId);
 
     /**
      * Find audit logs within time range

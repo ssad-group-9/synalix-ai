@@ -71,8 +71,8 @@ public class JwtUtil {
      * Create JWT token with claims and expiration
      */
     private String createToken(Map<String, Object> claims, String subject, Long expiration) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration);
+        var now = new Date();
+        var expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
                 .claims(claims)
@@ -129,7 +129,7 @@ public class JwtUtil {
      * Extract a specific claim from token
      */
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
+        final var claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
@@ -177,8 +177,8 @@ public class JwtUtil {
      */
     public Boolean validateToken(String token, User user) {
         try {
-            final String username = extractUsername(token);
-            final String userId = extractUserId(token);
+            final var username = extractUsername(token);
+            final var userId = extractUserId(token);
             
             return (username.equals(user.getUsername()) && 
                     userId.equals(user.getId().toString()) && 

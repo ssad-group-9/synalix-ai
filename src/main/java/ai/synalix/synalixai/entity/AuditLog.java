@@ -18,14 +18,7 @@ import java.util.UUID;
  * Audit log entity class
  */
 @Entity
-@Table(name = "audit_logs", 
-       indexes = {
-           @Index(name = "idx_operation_type", columnList = "operation_type"),
-           @Index(name = "idx_user_id", columnList = "user_id"),
-           @Index(name = "idx_timestamp", columnList = "timestamp"),
-           @Index(name = "idx_resource_id", columnList = "resource_id"),
-           @Index(name = "idx_username", columnList = "username")
-       })
+@Table(name = "audit_logs")
 @Data
 @NoArgsConstructor
 public class AuditLog {

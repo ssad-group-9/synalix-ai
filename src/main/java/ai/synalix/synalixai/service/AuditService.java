@@ -43,7 +43,7 @@ public class AuditService {
      */
     public void logAsync(AuditOperationType operationType, UUID userId, String resourceId, Map<String, Object> eventDescription) {
         try {
-            AuditLogMessage message = new AuditLogMessage(operationType, userId, resourceId, eventDescription);
+            var message = new AuditLogMessage(operationType, userId, resourceId, eventDescription);
             rabbitTemplate.convertAndSend(auditExchangeName, auditRoutingKey, message);
             logger.debug("Audit log message sent to queue: {}", message);
         } catch (Exception e) {
@@ -59,7 +59,7 @@ public class AuditService {
     @Transactional
     public void logDirect(AuditOperationType operationType, UUID userId, String resourceId, Map<String, Object> eventDescription) {
         try {
-            AuditLog auditLog = new AuditLog();
+            var auditLog = new AuditLog();
             auditLog.setOperationType(operationType);
             auditLog.setUserId(userId);
             auditLog.setResourceId(resourceId);
@@ -74,12 +74,9 @@ public class AuditService {
     /**
      * Log user authentication events
      */
-    public void logUserAuthentication(AuditOperationType operationType, UUID userId, String username, String ipAddress, boolean success) {
+    public void logUserAuthentication(AuditOperationType operationType, UUID userId, String username, boolean success) {
         Map<String, Object> eventDescription = Map.of(
-                "username", username,
-                "ipAddress", ipAddress != null ? ipAddress : "unknown",
-                "success", success,
-                "timestamp", System.currentTimeMillis()
+                "success", success
         );
         logAsync(operationType, userId, userId.toString(), eventDescription);
     }
@@ -89,8 +86,7 @@ public class AuditService {
      */
     public void logUserManagement(AuditOperationType operationType, UUID operatorId, UUID targetUserId, Map<String, Object> changes) {
         Map<String, Object> eventDescription = Map.of(
-                "changes", changes,
-                "timestamp", System.currentTimeMillis()
+                "changes", changes
         );
         logAsync(operationType, operatorId, targetUserId.toString(), eventDescription);
     }
@@ -100,9 +96,7 @@ public class AuditService {
      */
     public void logPasswordEvent(AuditOperationType operationType, UUID userId, String username, boolean success) {
         Map<String, Object> eventDescription = Map.of(
-                "username", username,
-                "success", success,
-                "timestamp", System.currentTimeMillis()
+                "success", success
         );
         logAsync(operationType, userId, userId.toString(), eventDescription);
     }
@@ -113,8 +107,7 @@ public class AuditService {
     public void logTokenEvent(AuditOperationType operationType, UUID userId, String tokenType, String action) {
         Map<String, Object> eventDescription = Map.of(
                 "tokenType", tokenType,
-                "action", action,
-                "timestamp", System.currentTimeMillis()
+                "action", action
         );
         logAsync(operationType, userId, null, eventDescription);
     }

@@ -64,7 +64,7 @@ public class UserService {
         }
 
         // Create user
-        User user = new User();
+        var user = new User();
         user.setUsername(username);
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setNickname(nickname);
@@ -72,7 +72,7 @@ public class UserService {
         user.setRole(role != null ? role : UserRole.USER);
         user.setStatus(UserStatus.ENABLED);
 
-        User savedUser = userRepository.save(user);
+        var savedUser = userRepository.save(user);
 
         // Audit log
         Map<String, Object> changes = Map.of(
@@ -118,13 +118,13 @@ public class UserService {
      */
     @Transactional
     public User updateUserInfo(UUID userId, String nickname, String email, UUID operatorId) {
-        User user = getUserById(userId);
+        var user = getUserById(userId);
 
         Map<String, Object> changes = new HashMap<>();
         
         // Update nickname if provided
         if (nickname != null && !nickname.trim().isEmpty() && !nickname.equals(user.getNickname())) {
-            String oldNickname = user.getNickname();
+            var oldNickname = user.getNickname();
             user.setNickname(nickname);
             changes.put("nickname", Map.of("old", oldNickname, "new", nickname));
         }
@@ -135,13 +135,13 @@ public class UserService {
             if (!email.trim().isEmpty() && userRepository.existsByEmail(email)) {
                 throw new ApiException(ApiErrorCode.EMAIL_EXISTS);
             }
-            String oldEmail = user.getEmail();
+            var oldEmail = user.getEmail();
             user.setEmail(email.trim().isEmpty() ? null : email);
             changes.put("email", Map.of("old", oldEmail != null ? oldEmail : "", "new", email));
         }
 
         if (!changes.isEmpty()) {
-            User savedUser = userRepository.save(user);
+            var savedUser = userRepository.save(user);
             
             // Audit log
             auditService.logUserManagement(AuditOperationType.USER_UPDATE, operatorId, userId, changes);
@@ -158,7 +158,7 @@ public class UserService {
      */
     @Transactional
     public void changePassword(UUID userId, String currentPassword, String newPassword) {
-        User user = getUserById(userId);
+        var user = getUserById(userId);
 
         // Verify current password
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
@@ -171,7 +171,7 @@ public class UserService {
         userRepository.save(user);
 
         // Revoke all refresh tokens to force re-login
-        int revokedCount = refreshTokenRepository.revokeAllTokensByUserId(userId);
+        var revokedCount = refreshTokenRepository.revokeAllTokensByUserId(userId);
         logger.info("Revoked {} refresh tokens for user: {}", revokedCount, userId);
 
         // Audit log
@@ -185,14 +185,14 @@ public class UserService {
      */
     @Transactional
     public void resetPassword(UUID userId, String newPassword, UUID operatorId) {
-        User user = getUserById(userId);
+        var user = getUserById(userId);
 
         // Update password
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
         // Revoke all refresh tokens to force re-login
-        int revokedCount = refreshTokenRepository.revokeAllTokensByUserId(userId);
+        var revokedCount = refreshTokenRepository.revokeAllTokensByUserId(userId);
         logger.info("Revoked {} refresh tokens for user: {}", revokedCount, userId);
 
         // Audit log
@@ -206,8 +206,8 @@ public class UserService {
      */
     @Transactional
     public User updateUserRole(UUID userId, UserRole newRole, UUID operatorId) {
-        User user = getUserById(userId);
-        User operator = getUserById(operatorId);
+        var user = getUserById(userId);
+        var operator = getUserById(operatorId);
 
         // Only admin can change roles
         if (!operator.isAdmin()) {
@@ -224,7 +224,7 @@ public class UserService {
             return user;
         }
 
-        UserRole oldRole = user.getRole();
+        var oldRole = user.getRole();
         user.setRole(newRole);
         User savedUser = userRepository.save(user);
 
@@ -249,7 +249,7 @@ public class UserService {
      */
     @Transactional
     public User updateUserStatus(UUID userId, UserStatus newStatus, UUID operatorId) {
-        User user = getUserById(userId);
+        var user = getUserById(userId);
 
         // Prevent admin from disabling themselves
         if (userId.equals(operatorId) && newStatus == UserStatus.DISABLED) {
@@ -261,13 +261,13 @@ public class UserService {
             return user;
         }
 
-        UserStatus oldStatus = user.getStatus();
+        var oldStatus = user.getStatus();
         user.setStatus(newStatus);
         User savedUser = userRepository.save(user);
 
         // If disabling user, revoke all their tokens
         if (newStatus == UserStatus.DISABLED) {
-            int revokedCount = refreshTokenRepository.revokeAllTokensByUserId(userId);
+            var revokedCount = refreshTokenRepository.revokeAllTokensByUserId(userId);
             logger.info("Revoked {} refresh tokens for disabled user: {}", revokedCount, userId);
         }
 
@@ -288,7 +288,7 @@ public class UserService {
      */
     @Transactional
     public void deleteUser(UUID userId, UUID operatorId) {
-        User user = getUserById(userId);
+        var user = getUserById(userId);
 
         // Prevent admin from deleting themselves
         if (userId.equals(operatorId)) {
@@ -301,7 +301,7 @@ public class UserService {
         }
 
         // Revoke all refresh tokens
-        int revokedCount = refreshTokenRepository.revokeAllTokensByUserId(userId);
+        var revokedCount = refreshTokenRepository.revokeAllTokensByUserId(userId);
         logger.info("Revoked {} refresh tokens for deleted user: {}", revokedCount, userId);
 
         // Delete user
@@ -318,6 +318,19 @@ public class UserService {
 
         logger.info("User deleted successfully: id={}, username={}, by operator: {}", 
                    userId, user.getUsername(), operatorId);
+    }
+
+    @Transactional
+    public void createOrUpdateInitialAdmin(String username, String password, String nickname, String email) {
+        var admin = userRepository.findByUsername(username).orElse(new User());
+        admin.setUsername(username);
+        admin.setPasswordHash(passwordEncoder.encode(password));
+        admin.setNickname(nickname);
+        admin.setEmail(email);
+        admin.setRole(UserRole.ADMIN);
+        admin.setStatus(UserStatus.ENABLED);
+        userRepository.save(admin);
+        logger.info("Initial admin created successfully: username={}, nickname={}, email={}", username, nickname, email);
     }
 
 

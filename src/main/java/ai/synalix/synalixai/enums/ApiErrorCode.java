@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 public enum ApiErrorCode {
     
     // Authentication & Authorization Errors (4xx)
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Authentication required"),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "Invalid username or password"),
     ACCOUNT_DISABLED(HttpStatus.FORBIDDEN, "Account is disabled"),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "Access denied"),

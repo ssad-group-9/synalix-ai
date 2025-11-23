@@ -40,7 +40,6 @@ services:
     container_name: synalix-app
     env_file:
       - .env.local
-    environment:
     ports:
       - "8080:8080"
     depends_on:
