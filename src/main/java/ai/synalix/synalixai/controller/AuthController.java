@@ -44,11 +44,11 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<RefreshResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
         
-        var loginResponse = authService.refreshToken(
+        var refreshResponse = authService.refreshToken(
             refreshTokenRequest.getRefreshToken()
         );
         
-        return ResponseEntity.ok(loginResponse);
+        return ResponseEntity.ok(refreshResponse);
     }
 
     /**
