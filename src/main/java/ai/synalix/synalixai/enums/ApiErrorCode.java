@@ -26,18 +26,14 @@ public enum ApiErrorCode {
     USERNAME_EXISTS(HttpStatus.CONFLICT, "Username already exists"),
     EMAIL_EXISTS(HttpStatus.CONFLICT, "Email already exists"),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "User not found"),
-    INVALID_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "Current password is incorrect"),
+    INVALID_CURRENT_PASSWORD(HttpStatus.FORBIDDEN, "Current password is incorrect"),
     CANNOT_MODIFY_SELF(HttpStatus.FORBIDDEN, "Cannot modify your own account"),
     CANNOT_DELETE_SELF(HttpStatus.FORBIDDEN, "Cannot delete your own account"),
     CANNOT_DISABLE_SELF(HttpStatus.FORBIDDEN, "Cannot disable your own account"),
     CANNOT_DELETE_ADMIN(HttpStatus.FORBIDDEN, "Cannot delete administrator accounts"),
     
     // System Errors (5xx)
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error"),
-    DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Database operation failed"),
-    EXTERNAL_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "External service unavailable"),
-    AUTHENTICATION_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Authentication service error"),
-    AUDIT_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Audit service error");
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
 
     private final HttpStatus httpStatus;
     private final String defaultMessage;

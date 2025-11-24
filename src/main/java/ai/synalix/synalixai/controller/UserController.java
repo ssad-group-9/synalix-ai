@@ -5,6 +5,7 @@ import ai.synalix.synalixai.config.JwtUserPrincipal;
 import ai.synalix.synalixai.dto.user.*;
 import ai.synalix.synalixai.entity.User;
 import ai.synalix.synalixai.enums.ApiErrorCode;
+import ai.synalix.synalixai.enums.UserRole;
 import ai.synalix.synalixai.enums.UserStatus;
 import ai.synalix.synalixai.exception.ApiException;
 import ai.synalix.synalixai.service.UserService;
@@ -103,7 +104,7 @@ public class UserController {
     /**
      * Update user information
      */
-    @PutMapping("/{userId}")
+    @PatchMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable UUID userId,
@@ -111,6 +112,22 @@ public class UserController {
             @AuthenticationPrincipal JwtUserPrincipal principal) {
 
         var operatorId = principal.getId();
+
+        if (request.getEnabled() != null) {
+            if (principal.getRole() == UserRole.ADMIN) {
+                userService.updateUserStatus(userId, request.getEnabled() ? UserStatus.ENABLED : UserStatus.DISABLED, operatorId);
+            } else {
+                throw new ApiException(ApiErrorCode.ACCESS_DENIED);
+            }
+        }
+
+        if (request.getRole() != null) {
+            if (principal.getRole() == UserRole.ADMIN) {
+                userService.updateUserRole(userId, request.getRole(), operatorId);
+            } else {
+                throw new ApiException(ApiErrorCode.ACCESS_DENIED);
+            }
+        }
 
         // Update basic information (nickname, email)
         var updatedUser = userService.updateUserInfo(
@@ -127,13 +144,29 @@ public class UserController {
     /**
      * Update current user profile
      */
-    @PutMapping("/me")
+    @PatchMapping("/me")
     public ResponseEntity<UserResponse> updateCurrentUserProfile(
             @Valid @RequestBody UpdateUserRequest request,
             @AuthenticationPrincipal JwtUserPrincipal principal
     ) {
 
         var currentUserId = principal.getId();
+
+        if (request.getEnabled() != null) {
+            if (principal.getRole() == UserRole.ADMIN) {
+                userService.updateUserStatus(currentUserId, request.getEnabled() ? UserStatus.ENABLED : UserStatus.DISABLED, currentUserId);
+            } else {
+                throw new ApiException(ApiErrorCode.ACCESS_DENIED);
+            }
+        }
+
+        if (request.getRole() != null) {
+            if (principal.getRole() == UserRole.ADMIN) {
+                userService.updateUserRole(currentUserId, request.getRole(), currentUserId);
+            } else {
+                throw new ApiException(ApiErrorCode.ACCESS_DENIED);
+            }
+        }
 
         // Regular users can only update nickname and email
         var updatedUser = userService.updateUserInfo(
@@ -150,7 +183,7 @@ public class UserController {
     /**
      * Change current user password
      */
-    @PostMapping("/me/change-password")
+    @PostMapping("/me/password")
     public ResponseEntity<Void> changeCurrentUserPassword(
             @Valid @RequestBody ChangePasswordRequest request,
             @AuthenticationPrincipal JwtUserPrincipal principal) {
@@ -162,36 +195,6 @@ public class UserController {
             request.getOldPassword(),
             request.getNewPassword()
         );
-
-        return ResponseEntity.ok(null);
-    }
-
-    /**
-     * Enable/disable user (Admin only)
-     */
-    @PostMapping("/{userId}/enabled")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> enableUser(
-            @PathVariable UUID userId,
-            @Valid @RequestBody UpdateUserEnabledRequest request,
-            @AuthenticationPrincipal JwtUserPrincipal principal) {
-        var operatorId = principal.getId();
-        userService.updateUserStatus(userId, request.getEnabled() ? UserStatus.ENABLED : UserStatus.DISABLED, operatorId);
-
-        return ResponseEntity.ok(null);
-    }
-
-    /**
-     * Update user role (Admin only)
-     */
-    @PostMapping("/{userId}/role")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> updateUserRole(
-            @PathVariable UUID userId,
-            @Valid @RequestBody UpdateUserRoleRequest request,
-            @AuthenticationPrincipal JwtUserPrincipal principal) {
-        var operatorId = principal.getId();
-        userService.updateUserRole(userId, request.getRole(), operatorId);
 
         return ResponseEntity.ok(null);
     }
@@ -213,7 +216,7 @@ public class UserController {
     /**
      * Reset user password (Admin only)
      */
-    @PostMapping("/{userId}/reset-password")
+    @PostMapping("/{userId}/password")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> resetUserPassword(
             @PathVariable UUID userId,

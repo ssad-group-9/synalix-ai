@@ -20,7 +20,7 @@ public class LoginRequest {
     private String username;
 
     @NotBlank(message = "Password cannot be blank")
-    @Size(min = 1, max = 255, message = "Password length cannot exceed 255 characters")
+    @Size(min = 6, max = 255, message = "Password must be at least 6 characters")
     @ToString.Exclude
     private String password;
 }
