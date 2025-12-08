@@ -1,18 +1,20 @@
 package ai.synalix.synalixai.dto.model;
 
+import ai.synalix.synalixai.enums.ModelType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Request DTO for registering a new base model
+ * Request DTO for creating a new model
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateBaseModelRequest {
+public class CreateModelRequest {
 
     /**
      * Display name of the model
@@ -22,15 +24,21 @@ public class CreateBaseModelRequest {
     private String name;
 
     /**
-     * HuggingFace model identifier (e.g., "meta-llama/Llama-2-7b")
+     * Type of the model (LLM, CV, OTHER)
      */
-    @NotBlank(message = "HuggingFace model ID cannot be blank")
-    @Size(max = 255, message = "HuggingFace model ID cannot exceed 255 characters")
-    private String huggingfaceModelId;
+    @NotNull(message = "Model type cannot be null")
+    private ModelType type;
 
     /**
      * Optional description of the model
      */
     @Size(max = 1000, message = "Description cannot exceed 1000 characters")
     private String description;
+
+    /**
+     * Version of the model
+     */
+    @NotBlank(message = "Model version cannot be blank")
+    @Size(max = 50, message = "Version cannot exceed 50 characters")
+    private String version;
 }

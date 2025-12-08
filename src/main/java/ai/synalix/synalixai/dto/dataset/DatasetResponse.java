@@ -1,6 +1,5 @@
 package ai.synalix.synalixai.dto.dataset;
 
-import ai.synalix.synalixai.enums.DatasetStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,47 +31,22 @@ public class DatasetResponse {
     private String description;
 
     /**
-     * Current status of the dataset
+     * Size in bytes
      */
-    private DatasetStatus status;
+    private Long size;
 
     /**
-     * Original filename uploaded by user
+     * Storage path or URL
      */
-    private String originalFilename;
+    private String path;
 
     /**
-     * File size in bytes
+     * User ID who uploaded the dataset
      */
-    private Long fileSize;
-
-    /**
-     * MIME type of the file
-     */
-    private String contentType;
-
-    /**
-     * Training set ratio (0.0 - 1.0)
-     */
-    private Double trainRatio;
-
-    /**
-     * Test set ratio (0.0 - 1.0)
-     */
-    private Double testRatio;
-
-    /**
-     * Evaluation set ratio (0.0 - 1.0)
-     */
-    private Double evalRatio;
+    private UUID uploadedBy;
 
     /**
      * Timestamp when the dataset was created
      */
     private LocalDateTime createdAt;
-
-    /**
-     * Timestamp when the dataset was last updated
-     */
-    private LocalDateTime updatedAt;
 }

@@ -7,12 +7,17 @@ package ai.synalix.synalixai.enums;
 public enum ModelType {
     
     /**
-     * Base model from HuggingFace, used as foundation for fine-tuning
+     * Large Language Model
      */
-    BASE,
+    LLM,
     
     /**
-     * Fine-tuned model checkpoint created by training
+     * Computer Vision Model
      */
-    CHECKPOINT
+    CV,
+    
+    /**
+     * Other model types
+     */
+    OTHER
 }

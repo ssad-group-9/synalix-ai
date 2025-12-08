@@ -1,7 +1,9 @@
 package ai.synalix.synalixai.entity;
 
+import ai.synalix.synalixai.enums.ModelType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,16 +15,16 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Base model entity class
- * Represents a foundation model from HuggingFace used for fine-tuning
+ * Model entity class
+ * Represents a model registered in the system
  */
 @Entity
-@Table(name = "base_models",
+@Table(name = "models",
        uniqueConstraints = @UniqueConstraint(columnNames = "name"))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class BaseModel {
+public class Model {
 
     @Id
     @UuidGenerator
@@ -38,12 +40,12 @@ public class BaseModel {
     private String name;
 
     /**
-     * HuggingFace model identifier (e.g., "meta-llama/Llama-2-7b")
+     * Type of the model (LLM, CV, OTHER)
      */
-    @NotBlank(message = "HuggingFace model ID cannot be blank")
-    @Size(max = 255, message = "HuggingFace model ID cannot exceed 255 characters")
-    @Column(name = "huggingface_model_id", nullable = false, length = 255)
-    private String huggingfaceModelId;
+    @NotNull(message = "Model type cannot be null")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false, length = 20)
+    private ModelType type;
 
     /**
      * Optional description of the model
@@ -53,10 +55,12 @@ public class BaseModel {
     private String description;
 
     /**
-     * Whether the model is enabled and available for use
+     * Version of the model
      */
-    @Column(name = "enabled", nullable = false)
-    private boolean enabled = true;
+    @NotBlank(message = "Model version cannot be blank")
+    @Size(max = 50, message = "Version cannot exceed 50 characters")
+    @Column(name = "version", nullable = false, length = 50)
+    private String version;
 
     /**
      * Timestamp when the model was registered

@@ -1,13 +1,11 @@
 package ai.synalix.synalixai.service;
 
 import ai.synalix.synalixai.dto.dataset.CreateDatasetRequest;
-import ai.synalix.synalixai.dto.dataset.DatasetPreprocessRequest;
 import ai.synalix.synalixai.dto.dataset.DatasetResponse;
 import ai.synalix.synalixai.dto.storage.PresignedUrlResponse;
 import ai.synalix.synalixai.entity.Dataset;
 import ai.synalix.synalixai.enums.ApiErrorCode;
 import ai.synalix.synalixai.enums.AuditOperationType;
-import ai.synalix.synalixai.enums.DatasetStatus;
 import ai.synalix.synalixai.exception.ApiException;
 import ai.synalix.synalixai.repository.DatasetRepository;
 import ai.synalix.synalixai.repository.UserRepository;
@@ -53,7 +51,6 @@ public class DatasetService {
     public List<DatasetResponse> getDatasetsByOwner(UUID userId) {
         return datasetRepository.findByOwnerId(userId)
                 .stream()
-                .filter(dataset -> dataset.getStatus() != DatasetStatus.DELETED)
                 .map(this::convertToResponse)
                 .toList();
     }
@@ -71,11 +68,11 @@ public class DatasetService {
     }
 
     /**
-     * Create a new dataset and generate upload URL
+     * Create a new dataset
      *
      * @param request the create dataset request
      * @param userId  the user ID
-     * @return the created dataset response with upload URL
+     * @return the created dataset response
      */
     @Transactional
     public DatasetResponse createDataset(CreateDatasetRequest request, UUID userId) {
@@ -92,18 +89,10 @@ public class DatasetService {
         var dataset = new Dataset();
         dataset.setName(request.getName());
         dataset.setDescription(request.getDescription());
-        dataset.setOriginalFilename(request.getFilename());
-        dataset.setContentType(request.getContentType());
-        dataset.setStatus(DatasetStatus.PENDING_UPLOAD);
+        dataset.setPath(request.getPath());
         dataset.setOwner(owner);
 
         var savedDataset = datasetRepository.save(dataset);
-
-        // Generate storage key after we have the dataset ID
-        var storageKey = minioService.generateDatasetStorageKey(
-                savedDataset.getId(), request.getFilename());
-        savedDataset.setStorageKey(storageKey);
-        savedDataset = datasetRepository.save(savedDataset);
 
         log.info("Dataset created: {} by user {}", savedDataset.getName(), userId);
 
@@ -113,7 +102,7 @@ public class DatasetService {
                 savedDataset.getId().toString(),
                 Map.of(
                         "name", savedDataset.getName(),
-                        "filename", request.getFilename()
+                        "path", savedDataset.getPath()
                 )
         );
 
@@ -127,22 +116,10 @@ public class DatasetService {
      * @param userId    the user ID
      * @return presigned URL response
      */
-    @Transactional
     public PresignedUrlResponse generateUploadUrl(UUID datasetId, UUID userId) {
         var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
 
-        // Only allow upload in PENDING_UPLOAD or FAILED status
-        if (dataset.getStatus() != DatasetStatus.PENDING_UPLOAD
-                && dataset.getStatus() != DatasetStatus.FAILED) {
-            throw new ApiException(ApiErrorCode.DATASET_UPLOAD_NOT_ALLOWED,
-                    "Dataset upload not allowed in current status: " + dataset.getStatus());
-        }
-
-        dataset.setStatus(DatasetStatus.UPLOADING);
-        datasetRepository.save(dataset);
-
-        var presignedUrl = minioService.generateDatasetUploadUrl(
-                datasetId, dataset.getOriginalFilename());
+        var presignedUrl = minioService.generateDatasetUploadUrl(datasetId, dataset.getName());
 
         log.info("Upload URL generated for dataset: {} by user {}", datasetId, userId);
 
@@ -157,39 +134,6 @@ public class DatasetService {
     }
 
     /**
-     * Confirm that dataset upload is complete
-     *
-     * @param datasetId the dataset ID
-     * @param userId    the user ID
-     * @param fileSize  the uploaded file size in bytes
-     * @return the updated dataset response
-     */
-    @Transactional
-    public DatasetResponse confirmUpload(UUID datasetId, UUID userId, Long fileSize) {
-        var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
-
-        if (dataset.getStatus() != DatasetStatus.UPLOADING) {
-            throw new ApiException(ApiErrorCode.DATASET_UPLOAD_NOT_ALLOWED,
-                    "Cannot confirm upload in current status: " + dataset.getStatus());
-        }
-
-        dataset.setStatus(DatasetStatus.READY);
-        dataset.setFileSize(fileSize);
-        var savedDataset = datasetRepository.save(dataset);
-
-        log.info("Dataset upload confirmed: {} by user {}", datasetId, userId);
-
-        auditService.logAsync(
-                AuditOperationType.DATASET_UPLOAD_COMPLETED,
-                userId,
-                datasetId.toString(),
-                Map.of("fileSize", fileSize)
-        );
-
-        return convertToResponse(savedDataset);
-    }
-
-    /**
      * Generate a presigned URL for downloading dataset file
      *
      * @param datasetId the dataset ID
@@ -199,13 +143,7 @@ public class DatasetService {
     public PresignedUrlResponse generateDownloadUrl(UUID datasetId, UUID userId) {
         var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
 
-        if (dataset.getStatus() != DatasetStatus.READY
-                && dataset.getStatus() != DatasetStatus.PROCESSING) {
-            throw new ApiException(ApiErrorCode.DATASET_ACCESS_DENIED,
-                    "Dataset not available for download in current status: " + dataset.getStatus());
-        }
-
-        var presignedUrl = minioService.generateDatasetDownloadUrl(dataset.getStorageKey());
+        var presignedUrl = minioService.generateDatasetDownloadUrl(dataset.getPath());
 
         log.info("Download URL generated for dataset: {} by user {}", datasetId, userId);
 
@@ -220,53 +158,7 @@ public class DatasetService {
     }
 
     /**
-     * Preprocess dataset by setting train/test/eval split ratios
-     *
-     * @param datasetId the dataset ID
-     * @param request   the preprocess request with split ratios
-     * @param userId    the user ID
-     * @return the updated dataset response
-     */
-    @Transactional
-    public DatasetResponse preprocessDataset(UUID datasetId, DatasetPreprocessRequest request, UUID userId) {
-        var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
-
-        if (dataset.getStatus() != DatasetStatus.READY) {
-            throw new ApiException(ApiErrorCode.DATASET_ACCESS_DENIED,
-                    "Dataset preprocessing only allowed in READY status");
-        }
-
-        // Validate that ratios sum to 1.0
-        var totalRatio = request.getTrainRatio() + request.getTestRatio() + request.getEvalRatio();
-        if (Math.abs(totalRatio - 1.0) > 0.001) {
-            throw new ApiException(ApiErrorCode.VALIDATION_FAILED,
-                    "Train, test, and eval ratios must sum to 1.0");
-        }
-
-        dataset.setTrainRatio(request.getTrainRatio());
-        dataset.setTestRatio(request.getTestRatio());
-        dataset.setEvalRatio(request.getEvalRatio());
-        var savedDataset = datasetRepository.save(dataset);
-
-        log.info("Dataset preprocessed: {} with ratios train={}, test={}, eval={} by user {}",
-                datasetId, request.getTrainRatio(), request.getTestRatio(), request.getEvalRatio(), userId);
-
-        auditService.logAsync(
-                AuditOperationType.DATASET_PREPROCESS,
-                userId,
-                datasetId.toString(),
-                Map.of(
-                        "trainRatio", request.getTrainRatio(),
-                        "testRatio", request.getTestRatio(),
-                        "evalRatio", request.getEvalRatio()
-                )
-        );
-
-        return convertToResponse(savedDataset);
-    }
-
-    /**
-     * Delete a dataset (soft delete)
+     * Delete a dataset
      *
      * @param datasetId the dataset ID
      * @param userId    the user ID
@@ -275,13 +167,7 @@ public class DatasetService {
     public void deleteDataset(UUID datasetId, UUID userId) {
         var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
 
-        if (dataset.getStatus() == DatasetStatus.PROCESSING) {
-            throw new ApiException(ApiErrorCode.DATASET_DELETE_NOT_ALLOWED,
-                    "Cannot delete dataset while processing");
-        }
-
-        dataset.setStatus(DatasetStatus.DELETED);
-        datasetRepository.save(dataset);
+        datasetRepository.delete(dataset);
 
         log.info("Dataset deleted: {} by user {}", datasetId, userId);
 
@@ -294,26 +180,34 @@ public class DatasetService {
     }
 
     /**
+     * Update dataset size after upload
+     *
+     * @param datasetId the dataset ID
+     * @param userId    the user ID
+     * @param size      the file size in bytes
+     * @return the updated dataset response
+     */
+    @Transactional
+    public DatasetResponse updateDatasetSize(UUID datasetId, UUID userId, Long size) {
+        var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
+
+        dataset.setSize(size);
+        var savedDataset = datasetRepository.save(dataset);
+
+        log.info("Dataset size updated: {} to {} bytes by user {}", datasetId, size, userId);
+
+        return convertToResponse(savedDataset);
+    }
+
+    /**
      * Get dataset entity by ID and owner (for internal use)
      *
      * @param datasetId the dataset ID
      * @param userId    the user ID
      * @return the dataset entity
      */
-    public Dataset getDatasetEntityByIdAndOwner(UUID datasetId, UUID userId) {
+    private Dataset getDatasetEntityByIdAndOwner(UUID datasetId, UUID userId) {
         return datasetRepository.findByIdAndOwnerId(datasetId, userId)
-                .orElseThrow(() -> new ApiException(ApiErrorCode.DATASET_NOT_FOUND,
-                        Map.of("datasetId", datasetId.toString())));
-    }
-
-    /**
-     * Get dataset entity by ID (for internal use, e.g., training service)
-     *
-     * @param datasetId the dataset ID
-     * @return the dataset entity
-     */
-    public Dataset getDatasetEntityById(UUID datasetId) {
-        return datasetRepository.findById(datasetId)
                 .orElseThrow(() -> new ApiException(ApiErrorCode.DATASET_NOT_FOUND,
                         Map.of("datasetId", datasetId.toString())));
     }
@@ -329,15 +223,10 @@ public class DatasetService {
                 dataset.getId(),
                 dataset.getName(),
                 dataset.getDescription(),
-                dataset.getStatus(),
-                dataset.getOriginalFilename(),
-                dataset.getFileSize(),
-                dataset.getContentType(),
-                dataset.getTrainRatio(),
-                dataset.getTestRatio(),
-                dataset.getEvalRatio(),
-                dataset.getCreatedAt(),
-                dataset.getUpdatedAt()
+                dataset.getSize(),
+                dataset.getPath(),
+                dataset.getOwner().getId(),
+                dataset.getCreatedAt()
         );
     }
 }

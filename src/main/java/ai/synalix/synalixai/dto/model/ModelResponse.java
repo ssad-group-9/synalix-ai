@@ -1,5 +1,6 @@
 package ai.synalix.synalixai.dto.model;
 
+import ai.synalix.synalixai.enums.ModelType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,12 +9,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Response DTO for base model information
+ * Response DTO for model information
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class BaseModelResponse {
+public class ModelResponse {
 
     /**
      * Unique identifier of the model
@@ -26,9 +27,9 @@ public class BaseModelResponse {
     private String name;
 
     /**
-     * HuggingFace model identifier
+     * Type of the model (LLM, CV, OTHER)
      */
-    private String huggingfaceModelId;
+    private ModelType type;
 
     /**
      * Description of the model
@@ -36,17 +37,12 @@ public class BaseModelResponse {
     private String description;
 
     /**
-     * Whether the model is enabled
+     * Version of the model
      */
-    private boolean enabled;
+    private String version;
 
     /**
-     * Timestamp when the model was registered
+     * Timestamp when the model was created
      */
     private LocalDateTime createdAt;
-
-    /**
-     * Username of the admin who registered this model
-     */
-    private String createdBy;
 }

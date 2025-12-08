@@ -28,15 +28,9 @@ public class CreateDatasetRequest {
     private String description;
 
     /**
-     * Original filename of the file to be uploaded
+     * Storage path or URL
      */
-    @NotBlank(message = "Filename cannot be blank")
-    @Size(max = 255, message = "Filename cannot exceed 255 characters")
-    private String filename;
-
-    /**
-     * MIME type of the file (e.g., "application/json", "text/csv")
-     */
-    @Size(max = 100, message = "Content type cannot exceed 100 characters")
-    private String contentType;
+    @NotBlank(message = "Path cannot be blank")
+    @Size(max = 500, message = "Path cannot exceed 500 characters")
+    private String path;
 }

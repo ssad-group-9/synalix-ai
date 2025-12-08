@@ -1,7 +1,6 @@
 package ai.synalix.synalixai.repository;
 
 import ai.synalix.synalixai.entity.Dataset;
-import ai.synalix.synalixai.enums.DatasetStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -23,15 +22,6 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
      * @return list of datasets owned by the user
      */
     List<Dataset> findByOwnerId(UUID ownerId);
-
-    /**
-     * Find all datasets owned by a user with a specific status
-     *
-     * @param ownerId the owner's user ID
-     * @param status  the dataset status
-     * @return list of matching datasets
-     */
-    List<Dataset> findByOwnerIdAndStatus(UUID ownerId, DatasetStatus status);
 
     /**
      * Find a dataset by ID and owner ID
@@ -61,10 +51,10 @@ public interface DatasetRepository extends JpaRepository<Dataset, UUID> {
     boolean existsByNameAndOwnerId(String name, UUID ownerId);
 
     /**
-     * Find a dataset by its storage key
+     * Find a dataset by its path
      *
-     * @param storageKey the MinIO storage key
+     * @param path the storage path
      * @return optional containing the dataset if found
      */
-    Optional<Dataset> findByStorageKey(String storageKey);
+    Optional<Dataset> findByPath(String path);
 }
