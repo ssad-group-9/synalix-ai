@@ -66,7 +66,7 @@ public class ModelController {
             @AuthenticationPrincipal JwtUserPrincipal principal) {
         var adminId = principal.getId();
         var model = modelService.createModel(request, adminId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(model);
+        return ResponseEntity.status(HttpStatus.OK).body(model);
     }
 
     /**

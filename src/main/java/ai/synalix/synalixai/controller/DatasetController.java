@@ -72,7 +72,7 @@ public class DatasetController {
             @AuthenticationPrincipal JwtUserPrincipal principal) {
         var userId = principal.getId();
         var dataset = datasetService.createDataset(request, userId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(dataset);
+        return ResponseEntity.status(HttpStatus.OK).body(dataset);
     }
 
     /**

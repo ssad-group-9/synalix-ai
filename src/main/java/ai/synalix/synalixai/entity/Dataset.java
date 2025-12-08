@@ -71,4 +71,16 @@ public class Dataset {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "status", nullable = false)
+    private String status = "PENDING_UPLOAD";
+
+    // Add a PostLoad method to ensure status is never null
+    @PostLoad
+    @PostPersist
+    private void ensureStatus() {
+        if (status == null) {
+            status = "PENDING_UPLOAD";
+        }
+    }
 }

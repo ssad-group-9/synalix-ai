@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -139,13 +140,18 @@ public class ModelService {
      * @return the response DTO
      */
     private ModelResponse convertToResponse(Model model) {
+        LocalDateTime createdAt = model.getCreatedAt();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+
         return new ModelResponse(
                 model.getId(),
                 model.getName(),
                 model.getType(),
                 model.getDescription(),
                 model.getVersion(),
-                model.getCreatedAt()
+                createdAt
         );
     }
 }

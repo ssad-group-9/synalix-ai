@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -91,6 +92,8 @@ public class DatasetService {
         dataset.setDescription(request.getDescription());
         dataset.setPath(request.getPath());
         dataset.setOwner(owner);
+        dataset.setStatus("PENDING_UPLOAD");
+        dataset.setSize(0L);
 
         var savedDataset = datasetRepository.save(dataset);
 
@@ -168,7 +171,6 @@ public class DatasetService {
         var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
 
         datasetRepository.delete(dataset);
-
         log.info("Dataset deleted: {} by user {}", datasetId, userId);
 
         auditService.logAsync(
@@ -192,6 +194,7 @@ public class DatasetService {
         var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
 
         dataset.setSize(size);
+        dataset.setStatus("READY");
         var savedDataset = datasetRepository.save(dataset);
 
         log.info("Dataset size updated: {} to {} bytes by user {}", datasetId, size, userId);
@@ -219,6 +222,11 @@ public class DatasetService {
      * @return the response DTO
      */
     private DatasetResponse convertToResponse(Dataset dataset) {
+        LocalDateTime createdAt = dataset.getCreatedAt();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+
         return new DatasetResponse(
                 dataset.getId(),
                 dataset.getName(),
@@ -226,7 +234,7 @@ public class DatasetService {
                 dataset.getSize(),
                 dataset.getPath(),
                 dataset.getOwner().getId(),
-                dataset.getCreatedAt()
+                createdAt
         );
     }
 }
