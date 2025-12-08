@@ -3,7 +3,6 @@ package ai.synalix.synalixai.config;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
-import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,25 +38,30 @@ public class MinioConfig {
 
     /**
      * Creates and configures the MinIO client bean
+     * Also initializes required buckets on startup
      *
      * @return configured MinioClient instance
      */
     @Bean
     public MinioClient minioClient() {
-        return MinioClient.builder()
+        var client = MinioClient.builder()
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
                 .build();
+        
+        initBuckets(client);
+        
+        return client;
     }
 
     /**
      * Initializes required buckets on application startup
      * Creates buckets if they don't exist
+     *
+     * @param client the MinIO client
      */
-    @PostConstruct
-    public void initBuckets() {
+    private void initBuckets(MinioClient client) {
         try {
-            var client = minioClient();
             createBucketIfNotExists(client, datasetsBucket);
             createBucketIfNotExists(client, checkpointsBucket);
             log.info("MinIO buckets initialized successfully");
