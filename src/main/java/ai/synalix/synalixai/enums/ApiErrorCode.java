@@ -32,6 +32,24 @@ public enum ApiErrorCode {
     CANNOT_DISABLE_SELF(HttpStatus.FORBIDDEN, "Cannot disable your own account"),
     CANNOT_DELETE_ADMIN(HttpStatus.FORBIDDEN, "Cannot delete administrator accounts"),
     
+    // Dataset Errors (4xx)
+    DATASET_NOT_FOUND(HttpStatus.NOT_FOUND, "Dataset not found"),
+    DATASET_NAME_EXISTS(HttpStatus.CONFLICT, "Dataset name already exists"),
+    DATASET_ACCESS_DENIED(HttpStatus.FORBIDDEN, "Access to dataset denied"),
+    DATASET_UPLOAD_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "Dataset upload not allowed in current status"),
+    DATASET_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "Dataset cannot be deleted in current status"),
+    
+    // Model Errors (4xx)
+    MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, "Model not found"),
+    MODEL_NAME_EXISTS(HttpStatus.CONFLICT, "Model name already exists"),
+    MODEL_ACCESS_DENIED(HttpStatus.FORBIDDEN, "Access to model denied"),
+    CHECKPOINT_NOT_FOUND(HttpStatus.NOT_FOUND, "Model checkpoint not found"),
+    
+    // Storage Errors (5xx)
+    STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Storage service error"),
+    PRESIGNED_URL_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to generate presigned URL"),
+    BUCKET_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "Storage bucket not found"),
+
     // System Errors (5xx)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
 
