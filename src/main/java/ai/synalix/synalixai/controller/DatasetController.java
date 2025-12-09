@@ -11,6 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -66,13 +69,14 @@ public class DatasetController {
      * @param principal the authenticated user
      * @return the created dataset
      */
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DatasetResponse> createDataset(
-            @Valid @RequestBody CreateDatasetRequest request,
+            @Valid @ModelAttribute CreateDatasetRequest request,
+            @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal JwtUserPrincipal principal) {
         var userId = principal.getId();
-        var dataset = datasetService.createDataset(request, userId);
-        return ResponseEntity.status(HttpStatus.OK).body(dataset);
+        var dataset = datasetService.createDataset(request, userId, file);
+        return ResponseEntity.ok(dataset);
     }
 
     /**

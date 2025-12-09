@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import ai.synalix.synalixai.enums.DatasetStatus;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -72,15 +74,7 @@ public class Dataset {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private String status = "PENDING_UPLOAD";
-
-    // Add a PostLoad method to ensure status is never null
-    @PostLoad
-    @PostPersist
-    private void ensureStatus() {
-        if (status == null) {
-            status = "PENDING_UPLOAD";
-        }
-    }
+    private DatasetStatus status = DatasetStatus.PENDING_UPLOAD;
 }

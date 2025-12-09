@@ -6,11 +6,14 @@ import ai.synalix.synalixai.enums.ApiErrorCode;
 import ai.synalix.synalixai.exception.ApiException;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import io.minio.http.Method;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -142,5 +145,52 @@ public class MinioService {
             return "";
         }
         return filename.substring(filename.lastIndexOf("."));
+    }
+
+    /**
+     * Upload a file to MinIO
+     *
+     * @param bucketName the bucket name
+     * @param objectName the object name
+     * @param stream     the input stream
+     * @param size       the file size
+     */
+    public void uploadFile(String bucketName, String objectName, InputStream stream, long size) {
+        try {
+            minioClient.putObject(
+                PutObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectName)
+                    .stream(stream, size, -1)
+                    .build()
+            );
+            log.debug("File uploaded successfully to {}/{}", bucketName, objectName);
+        } catch (Exception e) {
+            log.error("Failed to upload file to {}/{}: {}", bucketName, objectName, e.getMessage());
+            throw new ApiException(ApiErrorCode.DATASET_UPLOAD_NOT_ALLOWED,
+                    "Failed to upload file: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Delete a file from MinIO
+     *
+     * @param bucketName the bucket name
+     * @param objectName the object name
+     */
+    public void deleteFile(String bucketName, String objectName) {
+        try {
+            minioClient.removeObject(
+                RemoveObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectName)
+                    .build()
+            );
+            log.debug("File deleted successfully from {}/{}", bucketName, objectName);
+        } catch (Exception e) {
+            log.error("Failed to delete file from {}/{}: {}", bucketName, objectName, e.getMessage());
+            throw new ApiException(ApiErrorCode.DATASET_DELETE_NOT_ALLOWED,
+                    "Failed to delete file: " + e.getMessage());
+        }
     }
 }

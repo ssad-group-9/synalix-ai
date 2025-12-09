@@ -1,11 +1,13 @@
 package ai.synalix.synalixai.service;
 
+import ai.synalix.synalixai.config.MinioConfig;
 import ai.synalix.synalixai.dto.dataset.CreateDatasetRequest;
 import ai.synalix.synalixai.dto.dataset.DatasetResponse;
 import ai.synalix.synalixai.dto.storage.PresignedUrlResponse;
 import ai.synalix.synalixai.entity.Dataset;
 import ai.synalix.synalixai.enums.ApiErrorCode;
 import ai.synalix.synalixai.enums.AuditOperationType;
+import ai.synalix.synalixai.enums.DatasetStatus;
 import ai.synalix.synalixai.exception.ApiException;
 import ai.synalix.synalixai.repository.DatasetRepository;
 import ai.synalix.synalixai.repository.UserRepository;
@@ -13,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,16 +34,19 @@ public class DatasetService {
     private final UserRepository userRepository;
     private final MinioService minioService;
     private final AuditService auditService;
+    private final MinioConfig minioConfig;
 
     @Autowired
     public DatasetService(DatasetRepository datasetRepository,
                           UserRepository userRepository,
                           MinioService minioService,
-                          AuditService auditService) {
+                          AuditService auditService,
+                          MinioConfig minioConfig) {
         this.datasetRepository = datasetRepository;
         this.userRepository = userRepository;
         this.minioService = minioService;
         this.auditService = auditService;
+        this.minioConfig = minioConfig;
     }
 
     /**
@@ -76,7 +82,7 @@ public class DatasetService {
      * @return the created dataset response
      */
     @Transactional
-    public DatasetResponse createDataset(CreateDatasetRequest request, UUID userId) {
+    public DatasetResponse createDataset(CreateDatasetRequest request, UUID userId, MultipartFile file) {
         // Check if name already exists for this user
         if (datasetRepository.existsByNameAndOwnerId(request.getName(), userId)) {
             throw new ApiException(ApiErrorCode.DATASET_NAME_EXISTS,
@@ -87,18 +93,38 @@ public class DatasetService {
                 .orElseThrow(() -> new ApiException(ApiErrorCode.USER_NOT_FOUND,
                         Map.of("userId", userId.toString())));
 
+        String storageKey = minioService.generateDatasetStorageKey(UUID.randomUUID(), file.getOriginalFilename());
+
         var dataset = new Dataset();
         dataset.setName(request.getName());
         dataset.setDescription(request.getDescription());
-        dataset.setPath(request.getPath());
+        dataset.setPath(storageKey);
         dataset.setOwner(owner);
-        dataset.setStatus("PENDING_UPLOAD");
-        dataset.setSize(0L);
+        dataset.setStatus(DatasetStatus.READY);
+        dataset.setSize(file.getSize());
 
         var savedDataset = datasetRepository.save(dataset);
 
         log.info("Dataset created: {} by user {}", savedDataset.getName(), userId);
-
+        
+        try {
+            // Upload file to MinIO
+            minioService.uploadFile(
+                minioConfig.getDatasetsBucket(),
+                storageKey,
+                file.getInputStream(),
+                file.getSize()
+            );
+            
+            log.info("Dataset file uploaded to MinIO: {} with size {} bytes", storageKey, file.getSize());
+        } catch (Exception e) {
+            // If upload fails, delete the dataset record
+            datasetRepository.delete(savedDataset);
+            log.error("Failed to upload dataset file to MinIO: {}", e.getMessage());
+            throw new ApiException(ApiErrorCode.DATASET_UPLOAD_NOT_ALLOWED,
+                    "Failed to upload dataset file: " + e.getMessage());
+        }
+        
         auditService.logAsync(
                 AuditOperationType.DATASET_CREATE,
                 userId,
@@ -170,7 +196,21 @@ public class DatasetService {
     public void deleteDataset(UUID datasetId, UUID userId) {
         var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
 
+        String filePath = dataset.getPath();
+        String datasetName = dataset.getName();
+
         datasetRepository.delete(dataset);
+
+        try {
+            minioService.deleteFile(minioConfig.getDatasetsBucket(), filePath);
+            log.info("Dataset file deleted from MinIO: {} for dataset: {}", filePath, datasetName);
+        } catch (Exception e) {
+            // Log the error but don't fail the operation
+            // We've already deleted the database record, so we should notify admins about orphaned file
+            log.error("Failed to delete dataset file from MinIO: {} for dataset: {}. Manual cleanup may be required.", 
+                     filePath, datasetName, e);
+        }
+        
         log.info("Dataset deleted: {} by user {}", datasetId, userId);
 
         auditService.logAsync(
@@ -190,15 +230,17 @@ public class DatasetService {
      * @return the updated dataset response
      */
     @Transactional
-    public DatasetResponse updateDatasetSize(UUID datasetId, UUID userId, Long size) {
+    public DatasetResponse updateDatasetSize(UUID datasetId, UUID userId, Long size, String path) {
         var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
 
         dataset.setSize(size);
-        dataset.setStatus("READY");
+        dataset.setStatus(DatasetStatus.READY);
+        if (path != null && !path.isBlank()) {
+            dataset.setPath(path);
+        }
         var savedDataset = datasetRepository.save(dataset);
 
-        log.info("Dataset size updated: {} to {} bytes by user {}", datasetId, size, userId);
-
+        log.info("Dataset size updated: {} to {} bytes by user {}. Path set to: {}", datasetId, size, userId, dataset.getPath());
         return convertToResponse(savedDataset);
     }
 
