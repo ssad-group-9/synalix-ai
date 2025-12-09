@@ -210,7 +210,7 @@ public class DatasetService {
             log.error("Failed to delete dataset file from MinIO: {} for dataset: {}. Manual cleanup may be required.", 
                      filePath, datasetName, e);
         }
-        
+
         log.info("Dataset deleted: {} by user {}", datasetId, userId);
 
         auditService.logAsync(
@@ -241,6 +241,15 @@ public class DatasetService {
         var savedDataset = datasetRepository.save(dataset);
 
         log.info("Dataset size updated: {} to {} bytes by user {}. Path set to: {}", datasetId, size, userId, dataset.getPath());
+        auditService.logAsync(
+            AuditOperationType.DATASET_UPLOAD_COMPLETED,
+            userId,
+            datasetId.toString(),
+            Map.of(
+                    "name", dataset.getName(),
+                    "size", size
+            )
+        );
         return convertToResponse(savedDataset);
     }
 
