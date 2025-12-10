@@ -26,11 +26,4 @@ public class CreateDatasetRequest {
      */
     @Size(max = 1000, message = "Description cannot exceed 1000 characters")
     private String description;
-
-    /**
-     * Storage path or URL
-     */
-    @NotBlank(message = "Path cannot be blank")
-    @Size(max = 500, message = "Path cannot exceed 500 characters")
-    private String path;
 }

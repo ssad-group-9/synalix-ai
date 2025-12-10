@@ -89,24 +89,10 @@ public class DatasetService {
                     Map.of("name", request.getName()));
         }
 
-        var owner = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(ApiErrorCode.USER_NOT_FOUND,
-                        Map.of("userId", userId.toString())));
+        UUID datasetId = UUID.randomUUID();
 
-        String storageKey = minioService.generateDatasetStorageKey(UUID.randomUUID(), file.getOriginalFilename());
+        String storageKey = minioService.generateDatasetStorageKey(datasetId, file.getOriginalFilename());
 
-        var dataset = new Dataset();
-        dataset.setName(request.getName());
-        dataset.setDescription(request.getDescription());
-        dataset.setPath(storageKey);
-        dataset.setOwner(owner);
-        dataset.setStatus(DatasetStatus.READY);
-        dataset.setSize(file.getSize());
-
-        var savedDataset = datasetRepository.save(dataset);
-
-        log.info("Dataset created: {} by user {}", savedDataset.getName(), userId);
-        
         try {
             // Upload file to MinIO
             minioService.uploadFile(
@@ -118,21 +104,33 @@ public class DatasetService {
             
             log.info("Dataset file uploaded to MinIO: {} with size {} bytes", storageKey, file.getSize());
         } catch (Exception e) {
-            // If upload fails, delete the dataset record
-            datasetRepository.delete(savedDataset);
             log.error("Failed to upload dataset file to MinIO: {}", e.getMessage());
             throw new ApiException(ApiErrorCode.DATASET_UPLOAD_NOT_ALLOWED,
                     "Failed to upload dataset file: " + e.getMessage());
         }
-        
-        auditService.logAsync(
-                AuditOperationType.DATASET_CREATE,
+
+        var owner = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ApiErrorCode.USER_NOT_FOUND,
+                        Map.of("userId", userId.toString())));
+
+        var dataset = new Dataset();
+        dataset.setId(datasetId);
+        dataset.setName(request.getName());
+        dataset.setDescription(request.getDescription());
+        dataset.setPath(storageKey);
+        dataset.setOwner(owner);
+        dataset.setStatus(DatasetStatus.READY);
+        dataset.setSize(file.getSize());
+
+        var savedDataset = datasetRepository.save(dataset);
+        log.info("Dataset created: {} by user {}", savedDataset.getName(), userId);
+
+        auditService.logDatasetCreate(
                 userId,
                 savedDataset.getId().toString(),
-                Map.of(
-                        "name", savedDataset.getName(),
-                        "path", savedDataset.getPath()
-                )
+                savedDataset.getName(),
+                savedDataset.getPath(),
+                savedDataset.getSize()
         );
 
         return convertToResponse(savedDataset);
@@ -176,11 +174,10 @@ public class DatasetService {
 
         log.info("Download URL generated for dataset: {} by user {}", datasetId, userId);
 
-        auditService.logAsync(
-                AuditOperationType.DATASET_DOWNLOAD_URL_GENERATED,
+        auditService.logDatasetDownload(
                 userId,
-                datasetId.toString(),
-                Map.of("expiresAt", presignedUrl.getExpiresAt().toString())
+                dataset.getId().toString(),
+                dataset.getName()
         );
 
         return presignedUrl;
@@ -213,12 +210,7 @@ public class DatasetService {
 
         log.info("Dataset deleted: {} by user {}", datasetId, userId);
 
-        auditService.logAsync(
-                AuditOperationType.DATASET_DELETE,
-                userId,
-                datasetId.toString(),
-                Map.of("name", dataset.getName())
-        );
+        auditService.logDatasetDelete(userId, datasetId.toString(), datasetName);
     }
 
     /**
@@ -230,7 +222,7 @@ public class DatasetService {
      * @return the updated dataset response
      */
     @Transactional
-    public DatasetResponse updateDatasetSize(UUID datasetId, UUID userId, Long size, String path) {
+    public DatasetResponse updateDataset(UUID datasetId, UUID userId, Long size, String path) {
         var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
 
         dataset.setSize(size);
@@ -241,10 +233,10 @@ public class DatasetService {
         var savedDataset = datasetRepository.save(dataset);
 
         log.info("Dataset size updated: {} to {} bytes by user {}. Path set to: {}", datasetId, size, userId, dataset.getPath());
-        auditService.logAsync(
-            AuditOperationType.DATASET_UPLOAD_COMPLETED,
+        auditService.logDatasetUpdate(
             userId,
             datasetId.toString(),
+            dataset.getName(),
             Map.of(
                     "name", dataset.getName(),
                     "size", size
@@ -274,9 +266,6 @@ public class DatasetService {
      */
     private DatasetResponse convertToResponse(Dataset dataset) {
         LocalDateTime createdAt = dataset.getCreatedAt();
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
 
         return new DatasetResponse(
                 dataset.getId(),

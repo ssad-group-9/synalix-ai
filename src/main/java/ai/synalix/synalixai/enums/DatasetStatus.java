@@ -1,7 +1,7 @@
 package ai.synalix.synalixai.enums;
 
 /**
- * User status enumeration
+ * Dataset status enumeration
  */
 public enum DatasetStatus {
     PENDING_UPLOAD,

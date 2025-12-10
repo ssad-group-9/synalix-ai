@@ -113,7 +113,9 @@ public class MinioService {
      */
     private PresignedUrlResponse generatePresignedUrl(String bucket, String objectKey, Method method) {
         try {
-            var expirySeconds = minioConfig.getPresignedUrlExpiry();
+            var expirySeconds = (method == Method.PUT)
+                    ? minioConfig.getPresignedUrlUploadExpiry()
+                    : minioConfig.getPresignedUrlDownloadExpiry();
             var url = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(method)
@@ -138,7 +140,7 @@ public class MinioService {
     }
 
     /**
-      * Extract file extension from filename.
+     * Extract file extension from filename.
      * <p>
      * Rules:
      * <ul>
@@ -187,7 +189,7 @@ public class MinioService {
             log.debug("File uploaded successfully to {}/{}", bucketName, objectName);
         } catch (Exception e) {
             log.error("Failed to upload file to {}/{}: {}", bucketName, objectName, e.getMessage());
-            throw new ApiException(ApiErrorCode.DATASET_UPLOAD_NOT_ALLOWED,
+            throw new ApiException(ApiErrorCode.STORAGE_ERROR,
                     "Failed to upload file: " + e.getMessage());
         }
     }
@@ -209,7 +211,7 @@ public class MinioService {
             log.debug("File deleted successfully from {}/{}", bucketName, objectName);
         } catch (Exception e) {
             log.error("Failed to delete file from {}/{}: {}", bucketName, objectName, e.getMessage());
-            throw new ApiException(ApiErrorCode.DATASET_DELETE_NOT_ALLOWED,
+            throw new ApiException(ApiErrorCode.STORAGE_ERROR,
                     "Failed to delete file: " + e.getMessage());
         }
     }

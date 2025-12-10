@@ -55,9 +55,9 @@ public class Dataset {
     /**
      * Storage path or URL
      */
-    @NotBlank(message = "Path cannot be blank")
+    // Path can be null for pending uploads
     @Size(max = 500, message = "Path cannot exceed 500 characters")
-    @Column(name = "path", nullable = false, length = 500)
+    @Column(name = "path", nullable = true, length = 500)
     private String path;
 
     /**
