@@ -36,10 +36,13 @@ public class MinioService {
     }
 
     /**
-     * Generate a presigned URL for uploading a dataset file
+     * Generate a presigned URL for uploading a dataset file.
+     * <p>
+     * Note: Only the file extension from the provided {@code filename} is preserved in storage;
+     * the original filename itself is not used. The storage key will be a generic name (e.g., "data" + extension).
      *
      * @param datasetId the dataset ID
-     * @param filename  the original filename
+     * @param filename  the original filename (only the extension is used)
      * @return presigned URL response with upload URL
      */
     public PresignedUrlResponse generateDatasetUploadUrl(UUID datasetId, String filename) {
@@ -135,16 +138,33 @@ public class MinioService {
     }
 
     /**
-     * Extract file extension from filename
+      * Extract file extension from filename.
+     * <p>
+     * Rules:
+     * <ul>
+     *   <li>If the filename is null, empty, or does not contain a dot (other than as the first character), returns empty string.</li>
+     *   <li>If the filename starts with a dot and contains no other dots (e.g., ".gitignore"), returns empty string.</li>
+     *   <li>If the filename ends with a dot (e.g., "file."), returns empty string.</li>
+     *   <li>Otherwise, returns the substring from the last dot (including the dot), e.g., ".gz" for "archive.tar.gz".</li>
+     * </ul>
      *
      * @param filename the filename
      * @return the file extension including the dot, or empty string if none
      */
     private String getFileExtension(String filename) {
-        if (filename == null || !filename.contains(".")) {
+        if (filename == null || filename.isEmpty()) {
             return "";
         }
-        return filename.substring(filename.lastIndexOf("."));
+        int lastDot = filename.lastIndexOf('.');
+        // No dot or dot is the first character (hidden file with no extension)
+        if (lastDot <= 0) {
+            return "";
+        }
+        // Dot is the last character (filename ends with a dot)
+        if (lastDot == filename.length() - 1) {
+            return "";
+        }
+        return filename.substring(lastDot);
     }
 
     /**
