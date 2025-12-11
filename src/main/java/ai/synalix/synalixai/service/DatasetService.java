@@ -199,17 +199,17 @@ public class DatasetService {
         String filePath = dataset.getPath();
         String datasetName = dataset.getName();
 
-        datasetRepository.delete(dataset);
-
         try {
             minioService.deleteFile(minioConfig.getDatasetsBucket(), filePath);
             log.info("Dataset file deleted from MinIO: {} for dataset: {}", filePath, datasetName);
         } catch (Exception e) {
-            // Log the error but don't fail the operation
-            // We've already deleted the database record, so we should notify admins about orphaned file
-            log.error("Failed to delete dataset file from MinIO: {} for dataset: {}. Manual cleanup may be required.", 
+            // Log the error and do not delete the database record
+            log.error("Failed to delete dataset file from MinIO: {} for dataset: {}. Database record NOT deleted. Operation aborted.", 
                      filePath, datasetName, e);
+            throw new ApiException(ApiErrorCode.DATASET_DELETE_NOT_ALLOWED, 
+                "Failed to delete dataset file from MinIO. Database record not deleted. Please retry or contact support.");
         }
+        datasetRepository.delete(dataset);
 
         log.info("Dataset deleted: {} by user {}", datasetId, userId);
 
