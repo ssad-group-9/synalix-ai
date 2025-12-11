@@ -123,17 +123,28 @@ public class DatasetService {
         dataset.setSize(file.getSize());
 
         var savedDataset = datasetRepository.save(dataset);
-        log.info("Dataset created: {} by user {}", savedDataset.getName(), userId);
-
-        auditService.logDatasetCreate(
-                userId,
-                savedDataset.getId().toString(),
-                savedDataset.getName(),
-                savedDataset.getPath(),
-                savedDataset.getSize()
-        );
-
-        return convertToResponse(savedDataset);
+        try {
+            savedDataset = datasetRepository.save(dataset);
+            log.info("Dataset created: {} by user {}", savedDataset.getName(), userId);
+    
+            auditService.logDatasetCreate(
+                    userId,
+                    savedDataset.getId().toString(),
+                    savedDataset.getName(),
+                    savedDataset.getPath(),
+                    savedDataset.getSize()
+            );
+    
+            return convertToResponse(savedDataset);
+        } catch (Exception e) {
+            try {
+                minioService.deleteFile(minioConfig.getDatasetsBucket(), storageKey);
+                log.info("Rolled back MinIO upload for dataset: {} due to database save failure", datasetId);
+            } catch (Exception rollbackException) {
+                log.error("Failed to rollback MinIO upload for dataset: {}: {}", datasetId, rollbackException.getMessage());
+            }
+            throw e;
+        }
     }
 
     /**
