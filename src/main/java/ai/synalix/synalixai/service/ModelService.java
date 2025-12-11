@@ -141,9 +141,6 @@ public class ModelService {
      */
     private ModelResponse convertToResponse(Model model) {
         LocalDateTime createdAt = model.getCreatedAt();
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
 
         return new ModelResponse(
                 model.getId(),

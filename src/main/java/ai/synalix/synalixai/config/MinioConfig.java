@@ -33,8 +33,11 @@ public class MinioConfig {
     @Value("${minio.bucket.checkpoints}")
     private String checkpointsBucket;
 
-    @Value("${minio.presigned-url-expiry}")
-    private int presignedUrlExpiry;
+    @Value("${minio.presigned-url-expiry.upload}")
+    private int presignedUrlUploadExpiry;
+
+    @Value("${minio.presigned-url-expiry.download}")
+    private int presignedUrlDownloadExpiry;
 
     /**
      * Creates and configures the MinIO client bean
