@@ -89,7 +89,6 @@ public class AuditService {
         eventDescription.put("datasetPath", datasetPath);
         eventDescription.put("fileSize", fileSize);
         eventDescription.put("action", "create");
-        eventDescription.put("timestamp", System.currentTimeMillis());
 
         logOperation(AuditOperationType.DATASET_CREATE, userId, datasetId, eventDescription);
         logger.info("Dataset create audit logged for dataset: {} by user: {}", datasetName, userId);
@@ -103,7 +102,6 @@ public class AuditService {
         eventDescription.put("datasetName", datasetName);
         eventDescription.put("changes", changes);
         eventDescription.put("action", "update");
-        eventDescription.put("timestamp", System.currentTimeMillis());
 
         logOperation(AuditOperationType.DATASET_UPDATE, userId, datasetId, eventDescription);
         logger.info("Dataset update audit logged for dataset: {} by user: {}", datasetName, userId);
@@ -116,7 +114,6 @@ public class AuditService {
         Map<String, Object> eventDescription = new HashMap<>();
         eventDescription.put("datasetName", datasetName);
         eventDescription.put("action", "delete");
-        eventDescription.put("timestamp", System.currentTimeMillis());
 
         logOperation(AuditOperationType.DATASET_DELETE, userId, datasetId, eventDescription);
         logger.info("Dataset delete audit logged for dataset: {} by user: {}", datasetName, userId);
@@ -128,8 +125,7 @@ public class AuditService {
     public void logDatasetDownload(UUID userId, String datasetId, String datasetName) {
         Map<String, Object> eventDescription = Map.of(
                 "datasetName", datasetName,
-                "action", "download",
-                "timestamp", System.currentTimeMillis()
+                "action", "download"
         );
 
         logOperation(AuditOperationType.DATASET_DOWNLOAD_URL_GENERATED, userId, datasetId, eventDescription);
