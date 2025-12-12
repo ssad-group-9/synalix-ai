@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -40,8 +41,9 @@ public class AuditService {
 
     /**
      * Asynchronously submit audit log via RabbitMQ
+     * 统一使用 logOperation() 方法名
      */
-    public void logAsync(AuditOperationType operationType, UUID userId, String resourceId, Map<String, Object> eventDescription) {
+    public void logOperation(AuditOperationType operationType, UUID userId, String resourceId, Map<String, Object> eventDescription) {
         try {
             var message = new AuditLogMessage(operationType, userId, resourceId, eventDescription);
             rabbitTemplate.convertAndSend(auditExchangeName, auditRoutingKey, message);
@@ -51,6 +53,13 @@ public class AuditService {
             // Fallback: log directly to database
             logDirect(operationType, userId, resourceId, eventDescription);
         }
+    }
+
+    /**
+     * Asynchronously submit audit log via RabbitMQ
+     */
+    public void logAsync(AuditOperationType operationType, UUID userId, String resourceId, Map<String, Object> eventDescription) {
+        logOperation(operationType, userId, resourceId, eventDescription);
     }
 
     /**
@@ -69,6 +78,58 @@ public class AuditService {
         } catch (Exception e) {
             logger.error("Failed to save audit log to database", e);
         }
+    }
+
+    /**
+     * 记录数据集创建操作
+     */
+    public void logDatasetCreate(UUID userId, String datasetId, String datasetName, String datasetPath, Long fileSize) {
+        Map<String, Object> eventDescription = new HashMap<>();
+        eventDescription.put("datasetName", datasetName);
+        eventDescription.put("datasetPath", datasetPath);
+        eventDescription.put("fileSize", fileSize);
+        eventDescription.put("action", "create");
+
+        logOperation(AuditOperationType.DATASET_CREATE, userId, datasetId, eventDescription);
+        logger.info("Dataset create audit logged for dataset: {} by user: {}", datasetName, userId);
+    }
+
+    /**
+     * 记录数据集更新操作
+     */
+    public void logDatasetUpdate(UUID userId, String datasetId, String datasetName, Map<String, Object> changes) {
+        Map<String, Object> eventDescription = new HashMap<>();
+        eventDescription.put("datasetName", datasetName);
+        eventDescription.put("changes", changes);
+        eventDescription.put("action", "update");
+
+        logOperation(AuditOperationType.DATASET_UPDATE, userId, datasetId, eventDescription);
+        logger.info("Dataset update audit logged for dataset: {} by user: {}", datasetName, userId);
+    }
+
+    /**
+     * 记录数据集删除操作
+     */
+    public void logDatasetDelete(UUID userId, String datasetId, String datasetName) {
+        Map<String, Object> eventDescription = new HashMap<>();
+        eventDescription.put("datasetName", datasetName);
+        eventDescription.put("action", "delete");
+
+        logOperation(AuditOperationType.DATASET_DELETE, userId, datasetId, eventDescription);
+        logger.info("Dataset delete audit logged for dataset: {} by user: {}", datasetName, userId);
+    }
+
+    /**
+     * Log dataset download url
+     */
+    public void logDatasetDownload(UUID userId, String datasetId, String datasetName) {
+        Map<String, Object> eventDescription = Map.of(
+                "datasetName", datasetName,
+                "action", "download"
+        );
+
+        logOperation(AuditOperationType.DATASET_DOWNLOAD_URL_GENERATED, userId, datasetId, eventDescription);
+        logger.info("Dataset download audit logged for dataset: {} by user: {}", datasetName, userId);
     }
 
     /**
