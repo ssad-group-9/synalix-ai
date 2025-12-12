@@ -75,38 +75,18 @@ public class DatasetService {
     }
 
     /**
-     * Create a new dataset
+     * Create a new dataset without uploading file
      *
      * @param request the create dataset request
      * @param userId  the user ID
      * @return the created dataset response
      */
     @Transactional
-    public DatasetResponse createDataset(CreateDatasetRequest request, UUID userId, MultipartFile file) {
+    public DatasetResponse createDataset(CreateDatasetRequest request, UUID userId) {
         // Check if name already exists for this user
         if (datasetRepository.existsByNameAndOwnerId(request.getName(), userId)) {
             throw new ApiException(ApiErrorCode.DATASET_NAME_EXISTS,
                     Map.of("name", request.getName()));
-        }
-
-        UUID datasetId = UUID.randomUUID();
-
-        String storageKey = minioService.generateDatasetStorageKey(datasetId, file.getOriginalFilename());
-
-        try {
-            // Upload file to MinIO
-            minioService.uploadFile(
-                minioConfig.getDatasetsBucket(),
-                storageKey,
-                file.getInputStream(),
-                file.getSize()
-            );
-            
-            log.info("Dataset file uploaded to MinIO: {} with size {} bytes", storageKey, file.getSize());
-        } catch (Exception e) {
-            log.error("Failed to upload dataset file to MinIO: {}", e.getMessage());
-            throw new ApiException(ApiErrorCode.DATASET_UPLOAD_NOT_ALLOWED,
-                    "Failed to upload dataset file: " + e.getMessage());
         }
 
         var owner = userRepository.findById(userId)
@@ -114,37 +94,25 @@ public class DatasetService {
                         Map.of("userId", userId.toString())));
 
         var dataset = new Dataset();
-        dataset.setId(datasetId);
         dataset.setName(request.getName());
         dataset.setDescription(request.getDescription());
-        dataset.setPath(storageKey);
         dataset.setOwner(owner);
-        dataset.setStatus(DatasetStatus.READY);
-        dataset.setSize(file.getSize());
+        dataset.setPath("");
+        dataset.setStatus(DatasetStatus.PENDING_UPLOAD); // Dataset is pending until file is uploaded
+        dataset.setSize(0L); // Size will be updated after upload
 
         var savedDataset = datasetRepository.save(dataset);
-        try {
-            savedDataset = datasetRepository.save(dataset);
-            log.info("Dataset created: {} by user {}", savedDataset.getName(), userId);
-    
-            auditService.logDatasetCreate(
-                    userId,
-                    savedDataset.getId().toString(),
-                    savedDataset.getName(),
-                    savedDataset.getPath(),
-                    savedDataset.getSize()
-            );
-    
-            return convertToResponse(savedDataset);
-        } catch (Exception e) {
-            try {
-                minioService.deleteFile(minioConfig.getDatasetsBucket(), storageKey);
-                log.info("Rolled back MinIO upload for dataset: {} due to database save failure", datasetId);
-            } catch (Exception rollbackException) {
-                log.error("Failed to rollback MinIO upload for dataset: {}: {}", datasetId, rollbackException.getMessage());
-            }
-            throw e;
-        }
+        log.info("Dataset created without file: {} by user {}", savedDataset.getName(), userId);
+
+        auditService.logDatasetCreate(
+                userId,
+                savedDataset.getId().toString(),
+                savedDataset.getName(),
+                "",
+                0L
+        );
+
+        return convertToResponse(savedDataset);
     }
 
     /**
@@ -157,6 +125,10 @@ public class DatasetService {
     public PresignedUrlResponse generateUploadUrl(UUID datasetId, UUID userId) {
         var dataset = getDatasetEntityByIdAndOwner(datasetId, userId);
 
+        String storagePath = minioService.generateDatasetStorageKey(datasetId, dataset.getName());
+        dataset.setPath(storagePath);
+        datasetRepository.save(dataset);
+        
         var presignedUrl = minioService.generateDatasetUploadUrl(datasetId, dataset.getName());
 
         log.info("Upload URL generated for dataset: {} by user {}", datasetId, userId);
@@ -250,7 +222,8 @@ public class DatasetService {
             dataset.getName(),
             Map.of(
                     "name", dataset.getName(),
-                    "size", size
+                    "size", size,
+                    "path", path
             )
         );
         return convertToResponse(savedDataset);
@@ -277,6 +250,9 @@ public class DatasetService {
      */
     private DatasetResponse convertToResponse(Dataset dataset) {
         LocalDateTime createdAt = dataset.getCreatedAt();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
 
         return new DatasetResponse(
                 dataset.getId(),

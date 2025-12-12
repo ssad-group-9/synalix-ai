@@ -70,8 +70,7 @@ public class MinioConfig {
             log.info("MinIO buckets initialized successfully");
         } catch (Exception e) {
             log.error("Failed to initialize MinIO buckets: {}", e.getMessage());
-            // Don't throw exception to allow application to start even if MinIO is unavailable
-            // The error will be handled when actual operations are attempted
+            throw new RuntimeException("MinIO bucket initialization failed", e);
         }
     }
 

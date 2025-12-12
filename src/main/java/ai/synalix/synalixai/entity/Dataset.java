@@ -77,4 +77,8 @@ public class Dataset {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private DatasetStatus status = DatasetStatus.PENDING_UPLOAD;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 }
