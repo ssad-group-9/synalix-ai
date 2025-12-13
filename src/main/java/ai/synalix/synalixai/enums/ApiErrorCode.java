@@ -31,6 +31,7 @@ public enum ApiErrorCode {
     CANNOT_DELETE_SELF(HttpStatus.FORBIDDEN, "Cannot delete your own account"),
     CANNOT_DISABLE_SELF(HttpStatus.FORBIDDEN, "Cannot disable your own account"),
     CANNOT_DELETE_ADMIN(HttpStatus.FORBIDDEN, "Cannot delete administrator accounts"),
+    MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "Message not found"),
     
     // System Errors (5xx)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");

@@ -57,5 +57,15 @@ public enum AuditOperationType {
     /**
      * Token revocation
      */
-    TOKEN_REVOKE
+    TOKEN_REVOKE,
+
+    /**
+     * Create message
+     */
+    MESSAGE_CREATE,
+
+    /**
+     * Delete message
+     */
+    MESSAGE_DELETE
 }
