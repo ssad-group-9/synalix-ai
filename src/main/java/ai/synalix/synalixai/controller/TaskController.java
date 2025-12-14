@@ -56,8 +56,10 @@ public class TaskController {
      * Get all tasks
      */
     @GetMapping
-    public ResponseEntity<List<TaskResponse>> getAllTasks() {
-        var tasks = taskService.getAllTasks();
+    public ResponseEntity<List<TaskResponse>> getAllTasks(
+            @RequestParam(required = false) ai.synalix.synalixai.enums.TaskStatus status,
+            @RequestParam(required = false) ai.synalix.synalixai.enums.TaskType type) {
+        var tasks = taskService.getAllTasks(status, type);
         var responses = tasks.stream()
                 .map(this::convertToTaskResponse)
                 .collect(Collectors.toList());
@@ -78,21 +80,30 @@ public class TaskController {
      * Stop task
      */
     @PostMapping("/{id}/stop")
-    public ResponseEntity<Void> stopTask(
+    public ResponseEntity<TaskResponse> stopTask(
             @PathVariable UUID id,
             @AuthenticationPrincipal JwtUserPrincipal principal) {
         var userId = principal.getId();
-        taskService.stopTask(id, userId);
-        return ResponseEntity.ok().build();
+        var task = taskService.stopTask(id, userId);
+        return ResponseEntity.ok(convertToTaskResponse(task));
     }
 
     /**
      * Get task metrics
      */
     @GetMapping("/{id}/metrics")
-    public ResponseEntity<TaskMetricsResponse> getTaskMetrics(@PathVariable UUID id) {
+    public ResponseEntity<List<TaskMetricsResponse>> getTaskMetrics(@PathVariable UUID id) {
         var metrics = taskService.getTaskMetrics(id);
         return ResponseEntity.ok(metrics);
+    }
+
+    /**
+     * Get task logs
+     */
+    @GetMapping("/{id}/logs")
+    public ResponseEntity<String> getTaskLogs(@PathVariable UUID id) {
+        var logs = taskService.getTaskLogs(id);
+        return ResponseEntity.ok(logs);
     }
 
     private TaskResponse convertToTaskResponse(Task task) {

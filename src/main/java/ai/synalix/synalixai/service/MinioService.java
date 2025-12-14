@@ -5,6 +5,7 @@ import ai.synalix.synalixai.dto.storage.PresignedUrlResponse;
 import ai.synalix.synalixai.enums.ApiErrorCode;
 import ai.synalix.synalixai.exception.ApiException;
 import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
@@ -213,6 +214,26 @@ public class MinioService {
             log.error("Failed to delete file from {}/{}: {}", bucketName, objectName, e.getMessage());
             throw new ApiException(ApiErrorCode.STORAGE_ERROR,
                     "Failed to delete file: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get task logs content
+     *
+     * @param taskId the task ID
+     * @return the log content
+     */
+    public String getTaskLogs(UUID taskId) {
+        var objectName = taskId.toString() + ".log";
+        try (InputStream stream = minioClient.getObject(
+                GetObjectArgs.builder()
+                        .bucket(minioConfig.getLogsBucket())
+                        .object(objectName)
+                        .build())) {
+            return new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.warn("Failed to retrieve logs for task {}: {}", taskId, e.getMessage());
+            return "No logs available for task " + taskId;
         }
     }
 }
