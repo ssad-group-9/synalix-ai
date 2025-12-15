@@ -207,6 +207,12 @@ public class UserService {
     @Transactional
     public User updateUserRole(UUID userId, UserRole newRole, UUID operatorId) {
         var user = getUserById(userId);
+        var operator = getUserById(operatorId);
+
+        // Only admin can change roles
+        if (!operator.isAdmin()) {
+            throw new ApiException(ApiErrorCode.ACCESS_DENIED);
+        }
 
         // Prevent admin from changing their own role
         if (userId.equals(operatorId)) {

@@ -22,6 +22,10 @@ public class CreateUserRequest {
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     private String username;
 
+    @Size(min = 6, max = 255, message = "Password must be at least 6 characters")
+    @ToString.Exclude
+    private String password; // Optional - if not provided, a random password will be generated
+
     @NotBlank(message = "Nickname cannot be blank")
     @Size(max = 100, message = "Nickname cannot exceed 100 characters")
     private String nickname;

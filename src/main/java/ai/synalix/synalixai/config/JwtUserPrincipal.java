@@ -1,6 +1,5 @@
 package ai.synalix.synalixai.config;
 
-import ai.synalix.synalixai.enums.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,7 +17,7 @@ public class JwtUserPrincipal implements UserDetails {
     private final UUID id;
     private final String username;
     @Getter
-    private final UserRole role;
+    private final String role;
     @Getter
     private final String status;
 
@@ -34,7 +33,7 @@ public class JwtUserPrincipal implements UserDetails {
 
     @Override
     public List<SimpleGrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
     @Override

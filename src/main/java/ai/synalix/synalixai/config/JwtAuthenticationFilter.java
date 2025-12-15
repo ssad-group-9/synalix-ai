@@ -1,6 +1,5 @@
 package ai.synalix.synalixai.config;
 
-import ai.synalix.synalixai.enums.UserRole;
 import ai.synalix.synalixai.service.UserService;
 import ai.synalix.synalixai.util.JwtUtil;
 import jakarta.servlet.FilterChain;
@@ -108,7 +107,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 JwtUserPrincipal userPrincipal = new JwtUserPrincipal(
                         userId,
                         username,
-                        userRole.equals("USER") ? UserRole.USER : UserRole.ADMIN,
+                        userRole,
                         userStatus
                 );
 
