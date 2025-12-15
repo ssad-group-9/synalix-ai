@@ -70,7 +70,7 @@ public class MessageController {
         @RequestParam(name = "all", defaultValue = "false") boolean all
     ) {
         var requesterId = principal.getId();
-        var includeAll = all && principal.getRole() == UserRole.ADMIN;
+        var includeAll = all && UserRole.ADMIN.name().equals(principal.getRole());
 
         var messages = messageService.getMessages(requesterId, includeAll);
         var responses = messages.stream()
@@ -88,7 +88,7 @@ public class MessageController {
         @AuthenticationPrincipal JwtUserPrincipal principal
     ) {
         var requesterId = principal.getId();
-        var isAdmin = principal.getRole() == UserRole.ADMIN;
+        var isAdmin = UserRole.ADMIN.name().equals(principal.getRole());
 
         var message = messageService.getMessage(messageId, requesterId, isAdmin);
         var response = convertToResponse(message);

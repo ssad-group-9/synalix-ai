@@ -208,4 +208,64 @@ class MessageServiceTest {
         verify(messageRepository).delete(message);
         verify(auditService).logAsync(eq(AuditOperationType.MESSAGE_DELETE), eq(operatorId), eq(messageId.toString()), anyMap());
     }
+
+    /**
+     * Should throw MESSAGE_NOT_FOUND when deleting non-existent message
+     */
+    @Test
+    void deleteMessage_notFound_throwsException() {
+        var operatorId = UUID.randomUUID();
+        var messageId = UUID.randomUUID();
+        when(messageRepository.findById(messageId)).thenReturn(Optional.empty());
+
+        var ex = assertThrows(ApiException.class, () -> messageService.deleteMessage(messageId, operatorId));
+
+        assertEquals(ApiErrorCode.MESSAGE_NOT_FOUND, ex.getErrorCode());
+    }
+
+    /**
+     * Should create private message successfully
+     */
+    @Test
+    void createMessage_private_success() {
+        var operatorId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var savedId = UUID.randomUUID();
+        var saved = new Message();
+        saved.setId(savedId);
+        saved.setMessageType("ALERT");
+        saved.setMessageContent("secret");
+        saved.setVisibility(MessageVisibility.PRIVATE);
+        saved.setTargetUserId(targetUserId);
+
+        when(userRepository.existsById(targetUserId)).thenReturn(true);
+        when(messageRepository.save(any(Message.class))).thenReturn(saved);
+        doNothing().when(auditService).logAsync(eq(AuditOperationType.MESSAGE_CREATE), eq(operatorId), eq(savedId.toString()), anyMap());
+
+        var result = messageService.createMessage("ALERT", "secret", MessageVisibility.PRIVATE, targetUserId, operatorId);
+
+        assertEquals(savedId, result.getId());
+        verify(userRepository).existsById(targetUserId);
+        verify(messageRepository).save(any(Message.class));
+        verify(auditService).logAsync(eq(AuditOperationType.MESSAGE_CREATE), eq(operatorId), eq(savedId.toString()), anyMap());
+    }
+
+    /**
+     * Should allow admin to read private message even if not target
+     */
+    @Test
+    void getMessage_adminAccess_ok() {
+        var requesterId = UUID.randomUUID(); // Admin ID
+        var messageId = UUID.randomUUID();
+        var message = new Message();
+        message.setId(messageId);
+        message.setVisibility(MessageVisibility.PRIVATE);
+        message.setTargetUserId(UUID.randomUUID()); // Different user
+        when(messageRepository.findById(messageId)).thenReturn(Optional.of(message));
+
+        // isAdmin = true
+        var result = messageService.getMessage(messageId, requesterId, true);
+
+        assertEquals(messageId, result.getId());
+    }
 }
