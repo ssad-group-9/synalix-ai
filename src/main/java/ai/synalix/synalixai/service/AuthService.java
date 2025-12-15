@@ -73,6 +73,9 @@ public class AuthService {
     public RefreshResponse refreshToken(String refreshTokenValue) {
         Map<String, String> tokens = refreshAccessToken(refreshTokenValue);
         
+        // Get access token expiration time (5 minutes in seconds)
+        long expiresIn = 5L * 60; // 5 minutes
+        
         return new RefreshResponse(
             tokens.get("accessToken")
         );
@@ -100,35 +103,44 @@ public class AuthService {
      */
     @Transactional
     public Map<String, String> authenticate(String username, String password) {
-        // Find user by username
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ApiException(ApiErrorCode.INVALID_CREDENTIALS));
+        try {
+            // Find user by username
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ApiException(ApiErrorCode.INVALID_CREDENTIALS));
 
-        // Check if user is enabled
-        if (!user.isEnabled()) {
-            auditService.logUserAuthentication(AuditOperationType.USER_LOGIN, user.getId(), username, false);
-            throw new ApiException(ApiErrorCode.ACCOUNT_DISABLED);
+            // Check if user is enabled
+            if (!user.isEnabled()) {
+                auditService.logUserAuthentication(AuditOperationType.USER_LOGIN, user.getId(), username, false);
+                throw new ApiException(ApiErrorCode.ACCOUNT_DISABLED);
+            }
+
+            // Verify password
+            if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+                auditService.logUserAuthentication(AuditOperationType.USER_LOGIN, user.getId(), username, false);
+                throw new ApiException(ApiErrorCode.INVALID_CREDENTIALS);
+            }
+
+            // Generate tokens
+            String accessToken = jwtUtil.generateAccessToken(user);
+            String refreshToken = generateAndSaveRefreshToken(user);
+
+            // Log successful authentication
+            auditService.logUserAuthentication(AuditOperationType.USER_LOGIN, user.getId(), username, true);
+
+            logger.info("User authenticated successfully: username={}, userId={}", username, user.getId());
+
+            return Map.of(
+                    "accessToken", accessToken,
+                    "refreshToken", refreshToken
+            );
+
+        } catch (ApiException e) {
+            logger.warn("Authentication failed for username: {}, reason: {}", username, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("Authentication error for username: {}", username, e);
+            throw new ApiException(ApiErrorCode.AUTHENTICATION_SERVICE_ERROR);
         }
-
-        // Verify password
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            auditService.logUserAuthentication(AuditOperationType.USER_LOGIN, user.getId(), username, false);
-            throw new ApiException(ApiErrorCode.INVALID_CREDENTIALS);
-        }
-
-        // Generate tokens
-        String accessToken = jwtUtil.generateAccessToken(user);
-        String refreshToken = generateAndSaveRefreshToken(user);
-
-        // Log successful authentication
-        auditService.logUserAuthentication(AuditOperationType.USER_LOGIN, user.getId(), username, true);
-
-        logger.info("User authenticated successfully: username={}, userId={}", username, user.getId());
-
-        return Map.of(
-                "accessToken", accessToken,
-                "refreshToken", refreshToken
-        );
     }
 
     /**
@@ -136,38 +148,46 @@ public class AuthService {
      */
     @Transactional
     public Map<String, String> refreshAccessToken(String refreshTokenValue) {
-        // Find refresh token
-        var refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
-                .orElseThrow(() -> new ApiException(ApiErrorCode.INVALID_REFRESH_TOKEN));
+        try {
+            // Find refresh token
+            var refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
+                    .orElseThrow(() -> new ApiException(ApiErrorCode.INVALID_REFRESH_TOKEN));
 
-        // Check if token is valid
-        if (!refreshToken.isValid()) {
-            auditService.logTokenEvent(AuditOperationType.TOKEN_REFRESH, refreshToken.getUserId(), "refresh", "failed_invalid");
-            throw new ApiException(ApiErrorCode.INVALID_REFRESH_TOKEN);
+            // Check if token is valid
+            if (!refreshToken.isValid()) {
+                auditService.logTokenEvent(AuditOperationType.TOKEN_REFRESH, refreshToken.getUserId(), "refresh", "failed_invalid");
+                throw new ApiException(ApiErrorCode.INVALID_REFRESH_TOKEN);
+            }
+
+            // Get user
+            var user = userRepository.findById(refreshToken.getUserId())
+                    .orElseThrow(() -> new ApiException(ApiErrorCode.USER_NOT_FOUND));
+
+            // Check if user is still enabled
+            if (!user.isEnabled()) {
+                auditService.logTokenEvent(AuditOperationType.TOKEN_REFRESH, user.getId(), "refresh", "failed_disabled");
+                throw new ApiException(ApiErrorCode.ACCOUNT_DISABLED);
+            }
+
+            // Generate new access token
+            var newAccessToken = jwtUtil.generateAccessToken(user);
+
+            // Log token refresh
+            auditService.logTokenEvent(AuditOperationType.TOKEN_REFRESH, user.getId(), "access", "success");
+
+            logger.info("Token refreshed successfully for user: {}", user.getId());
+
+            return Map.of(
+                    "accessToken", newAccessToken
+            );
+
+        } catch (ApiException e) {
+            logger.warn("Token refresh failed: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("Token refresh error", e);
+            throw new ApiException(ApiErrorCode.AUTHENTICATION_SERVICE_ERROR);
         }
-
-        // Get user
-        var user = userRepository.findById(refreshToken.getUserId())
-                .orElseThrow(() -> new ApiException(ApiErrorCode.INVALID_REFRESH_TOKEN));
-
-        // Check if user is still enabled
-        if (!user.isEnabled()) {
-            auditService.logTokenEvent(AuditOperationType.TOKEN_REFRESH, user.getId(), "refresh", "failed_disabled");
-            throw new ApiException(ApiErrorCode.ACCOUNT_DISABLED);
-        }
-
-        // Generate new access token
-        var newAccessToken = jwtUtil.generateAccessToken(user);
-
-        // Log token refresh
-        auditService.logTokenEvent(AuditOperationType.TOKEN_REFRESH, user.getId(), "access", "success");
-
-        logger.info("Token refreshed successfully for user: {}", user.getId());
-
-        return Map.of(
-                "accessToken", newAccessToken
-        );
-
     }
 
     /**
@@ -175,16 +195,21 @@ public class AuthService {
      */
     @Transactional
     public void logout(String refreshTokenValue, UUID userId) {
-        if (refreshTokenValue != null) {
-            refreshTokenRepository.revokeTokenByToken(refreshTokenValue);
-            auditService.logTokenEvent(AuditOperationType.TOKEN_REVOKE, userId, "refresh", "logout");
-        }
+        try {
+            if (refreshTokenValue != null) {
+                refreshTokenRepository.revokeTokenByToken(refreshTokenValue);
+                auditService.logTokenEvent(AuditOperationType.TOKEN_REVOKE, userId, "refresh", "logout");
+            }
+            
+            if (userId != null) {
+                auditService.logUserAuthentication(AuditOperationType.USER_LOGOUT, userId, null, true);
+            }
 
-        if (userId != null) {
-            auditService.logUserAuthentication(AuditOperationType.USER_LOGOUT, userId, null, true);
-        }
+            logger.info("User logged out successfully: userId={}", userId);
 
-        logger.info("User logged out successfully: userId={}", userId);
+        } catch (Exception e) {
+            logger.error("Logout error for userId: {}", userId, e);
+        }
     }
 
     /**
@@ -192,10 +217,16 @@ public class AuthService {
      */
     @Transactional
     public void revokeAllUserTokens(UUID userId) {
-        var revokedCount = refreshTokenRepository.revokeAllTokensByUserId(userId);
-        auditService.logTokenEvent(AuditOperationType.TOKEN_REVOKE, userId, "refresh", "all_revoked");
+        try {
+            var revokedCount = refreshTokenRepository.revokeAllTokensByUserId(userId);
+            auditService.logTokenEvent(AuditOperationType.TOKEN_REVOKE, userId, "refresh", "all_revoked");
+            
+            logger.info("Revoked {} refresh tokens for user: {}", revokedCount, userId);
 
-        logger.info("Revoked {} refresh tokens for user: {}", revokedCount, userId);
+        } catch (Exception e) {
+            logger.error("Error revoking tokens for userId: {}", userId, e);
+            throw new RuntimeException("Failed to revoke user tokens");
+        }
     }
 
     /**
