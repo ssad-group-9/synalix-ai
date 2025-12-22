@@ -2,6 +2,7 @@ package ai.synalix.synalixai.controller;
 
 import ai.synalix.synalixai.config.JwtUserPrincipal;
 import ai.synalix.synalixai.dto.task.CreateTaskRequest;
+import ai.synalix.synalixai.dto.task.TaskChartResponse;
 import ai.synalix.synalixai.dto.task.TaskMetricsResponse;
 import ai.synalix.synalixai.dto.task.TaskResponse;
 import ai.synalix.synalixai.entity.Task;
@@ -46,8 +47,7 @@ public class TaskController {
                 request.getDatasetId(),
                 request.getGpuIds(),
                 request.getConfig(),
-                userId
-        );
+                userId);
 
         return ResponseEntity.ok(convertToTaskResponse(createdTask));
     }
@@ -95,6 +95,15 @@ public class TaskController {
     public ResponseEntity<List<TaskMetricsResponse>> getTaskMetrics(@PathVariable UUID id) {
         var metrics = taskService.getTaskMetrics(id);
         return ResponseEntity.ok(metrics);
+    }
+
+    /**
+     * Get task chart
+     */
+    @GetMapping("/{id}/chart")
+    public ResponseEntity<TaskChartResponse> getTaskChart(@PathVariable UUID id) {
+        var chart = taskService.getTaskChart(id);
+        return ResponseEntity.ok(chart);
     }
 
     /**

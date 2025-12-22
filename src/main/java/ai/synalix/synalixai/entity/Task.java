@@ -69,4 +69,10 @@ public class Task {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    /**
+     * External backend task id returned by /api/train
+     */
+    @Column(name = "external_task_id", length = 100)
+    private String externalTaskId;
 }

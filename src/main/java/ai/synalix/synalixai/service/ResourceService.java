@@ -1,11 +1,16 @@
 package ai.synalix.synalixai.service;
 
+import ai.synalix.synalixai.dto.gpu.ResourceDetail;
+import ai.synalix.synalixai.dto.gpu.GpuStatusResponse;
 import ai.synalix.synalixai.entity.Resource;
 import ai.synalix.synalixai.enums.ApiErrorCode;
 import ai.synalix.synalixai.exception.ApiException;
 import ai.synalix.synalixai.repository.ResourceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -16,17 +21,25 @@ import java.util.List;
 public class ResourceService {
 
     private final ResourceRepository resourceRepository;
+    private final RestTemplate restTemplate;
+
+    /**
+     * Backend base URL, from env BACKEND or default http://123.249.124.73:8080
+     */
+    @Value("${app.backend-base-url}")
+    private String backendBaseUrl;
 
     @Autowired
-    public ResourceService(ResourceRepository resourceRepository) {
+    public ResourceService(ResourceRepository resourceRepository, RestTemplate restTemplate) {
         this.resourceRepository = resourceRepository;
+        this.restTemplate = restTemplate;
     }
 
     /**
      * Get all resources
      */
-    public List<Resource> getAllResources() {
-        return resourceRepository.findAll();
+    public List<ResourceDetail> getAllResources() {
+        return getGpuStatus().getGpuDetails();
     }
 
     /**
@@ -35,5 +48,22 @@ public class ResourceService {
     public Resource getResourceById(Long id) {
         return resourceRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ApiErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    /**
+     * Fetch GPU status from external backend: {$BACKEND}/api/gpu/status
+     *
+     * @return GPU status response
+     * @throws ApiException when external call fails
+     */
+    public GpuStatusResponse getGpuStatus() {
+        var url = backendBaseUrl.endsWith("/")
+                ? backendBaseUrl + "api/gpu/status"
+                : backendBaseUrl + "/api/gpu/status";
+        try {
+            return restTemplate.getForObject(url, GpuStatusResponse.class);
+        } catch (RestClientException ex) {
+            throw new ApiException(ApiErrorCode.INTERNAL_SERVER_ERROR, "Failed to fetch GPU status");
+        }
     }
 }

@@ -1,0 +1,41 @@
+TASK_CREATE audit log: USER_LOGIN, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 0e320933-ea00-4b7f-a65d-2570f7795a3d, {success=true}
+TASK_CREATE audit log: USER_LOGIN, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 0e320933-ea00-4b7f-a65d-2570f7795a3d, {success=true}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, f88b80ff-11f4-4b8b-8260-501783dee504, {datasetPath=, fileSize=0, datasetName=123, action=create}
+TASK_CREATE audit log: MODEL_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 33dce188-cbd5-4556-b16b-043788f6111d, {name=123123, version=1.0, type=LLM}
+TASK_CREATE audit log: TASK_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, e9554c46-a857-4561-8c6e-d415d44315b8, {datasetId=f88b80ff-11f4-4b8b-8260-501783dee504, modelId=33dce188-cbd5-4556-b16b-043788f6111d, name=123123, type=TRAINING}
+TASK_CREATE audit log: USER_LOGIN, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 0e320933-ea00-4b7f-a65d-2570f7795a3d, {success=true}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 4af9e9c3-7b0a-4014-bbb4-83c5c553e201, {datasetPath=, fileSize=0, datasetName=21123, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 094c8c67-de07-4673-b3c0-b1a83edb4196, {datasetPath=, fileSize=0, datasetName=4124, action=create}
+TASK_CREATE audit log: USER_LOGIN, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 0e320933-ea00-4b7f-a65d-2570f7795a3d, {success=true}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, eaff6eec-2387-4ce0-ae37-5dae176d8026, {datasetPath=, fileSize=0, datasetName=214312, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, d47fd88c-cf43-497f-bf38-97b98c7ef678, {datasetPath=, fileSize=0, datasetName=23423, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 7df797cb-1a46-4667-8843-189e55de2e51, {datasetPath=, fileSize=0, datasetName=asfas, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, e3e322a9-b41a-4ba0-afa9-20b959159a98, {datasetPath=, fileSize=0, datasetName=2312, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 83f49ae8-ded9-4eef-a9a1-2dd1ff0e6b58, {datasetPath=, fileSize=0, datasetName=24, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, b0de2dd5-d738-4eef-bb31-1a8dc6153e78, {datasetPath=, fileSize=0, datasetName=234, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, d70bc8c8-f804-4ca8-8b3d-8ef9188a096c, {datasetPath=, fileSize=0, datasetName=ewr, action=create}
+TASK_CREATE audit log: DATASET_UPLOAD_URL_GENERATED, 0e320933-ea00-4b7f-a65d-2570f7795a3d, d70bc8c8-f804-4ca8-8b3d-8ef9188a096c, {expiresAt=2025-12-22T21:41:26.966995300}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 97c6219e-60eb-4790-9529-48cb27f5502b, {datasetPath=, fileSize=0, datasetName=ewr1, action=create}
+TASK_CREATE audit log: DATASET_UPLOAD_URL_GENERATED, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 97c6219e-60eb-4790-9529-48cb27f5502b, {expiresAt=2025-12-22T21:41:57.872541600}
+TASK_CREATE audit log: USER_LOGIN, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 0e320933-ea00-4b7f-a65d-2570f7795a3d, {success=true}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 48c2a08b-c326-4962-a4aa-76ff50ec513f, {datasetPath=, fileSize=0, datasetName=qwr, action=create}
+TASK_CREATE audit log: DATASET_UPLOAD_URL_GENERATED, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 48c2a08b-c326-4962-a4aa-76ff50ec513f, {expiresAt=2025-12-22T21:42:48.259873600}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, a7793bda-715a-4900-84d9-b235df6b17f6, {datasetPath=, fileSize=0, datasetName=fsd, action=create}
+TASK_CREATE audit log: DATASET_UPLOAD_URL_GENERATED, 0e320933-ea00-4b7f-a65d-2570f7795a3d, a7793bda-715a-4900-84d9-b235df6b17f6, {expiresAt=2025-12-22T21:43:12.722327700}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 7f073622-58f2-4ca2-92c9-2f7e414aa895, {datasetPath=, fileSize=0, datasetName=asd, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, f2ba71f6-8097-472e-a199-ff088e3e35f9, {datasetPath=, fileSize=0, datasetName=reyery, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 6a05cbb6-88ad-412d-96bc-62286cc248e3, {datasetPath=, fileSize=0, datasetName=hhhh, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, c36c640a-ce55-4464-b0b4-4c53946cfc2f, {datasetPath=, fileSize=0, datasetName=sdfsdf, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 77b3f59d-532c-4875-8897-5f756a31505c, {datasetPath=, fileSize=0, datasetName=asdasd, action=create}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, ca1b61e6-975a-4acb-b2d1-e5b746370cbc, {datasetPath=, fileSize=0, datasetName=fdsf, action=create}
+TASK_CREATE audit log: USER_LOGIN, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 0e320933-ea00-4b7f-a65d-2570f7795a3d, {success=true}
+TASK_CREATE audit log: DATASET_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, f0f9cad4-ab78-43bd-a995-dec19ae11135, {datasetPath=, fileSize=0, datasetName=asd44, action=create}
+TASK_CREATE audit log: DATASET_UPLOAD_URL_GENERATED, 0e320933-ea00-4b7f-a65d-2570f7795a3d, f0f9cad4-ab78-43bd-a995-dec19ae11135, {expiresAt=2025-12-22T21:51:37.257580500}
+TASK_CREATE audit log: DATASET_DOWNLOAD_URL_GENERATED, 0e320933-ea00-4b7f-a65d-2570f7795a3d, f0f9cad4-ab78-43bd-a995-dec19ae11135, {datasetName=asd44, action=download}
+TASK_CREATE audit log: DATASET_DOWNLOAD_URL_GENERATED, 0e320933-ea00-4b7f-a65d-2570f7795a3d, f0f9cad4-ab78-43bd-a995-dec19ae11135, {datasetName=asd44, action=download}
+TASK_CREATE audit log: DATASET_DOWNLOAD_URL_GENERATED, 0e320933-ea00-4b7f-a65d-2570f7795a3d, f0f9cad4-ab78-43bd-a995-dec19ae11135, {datasetName=asd44, action=download}
+TASK_CREATE audit log: USER_LOGIN, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 0e320933-ea00-4b7f-a65d-2570f7795a3d, {success=true}
+TASK_CREATE audit log: TASK_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 1fb9144c-2519-4ec1-b1e6-f3165c1a8454, {datasetId=f88b80ff-11f4-4b8b-8260-501783dee504, modelId=33dce188-cbd5-4556-b16b-043788f6111d, name=222, type=TRAINING}
+TASK_CREATE audit log: USER_LOGIN, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 0e320933-ea00-4b7f-a65d-2570f7795a3d, {success=true}
+TASK_CREATE audit log: TASK_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, cea41533-80a0-4879-b838-52a3d996997c, {datasetId=4af9e9c3-7b0a-4014-bbb4-83c5c553e201, modelId=33dce188-cbd5-4556-b16b-043788f6111d, name=sss , type=TRAINING}
+TASK_CREATE audit log: TASK_CREATE, 0e320933-ea00-4b7f-a65d-2570f7795a3d, 3b4b6891-6946-4b1a-a2ac-dc2a5e80792e, {datasetId=f88b80ff-11f4-4b8b-8260-501783dee504, modelId=33dce188-cbd5-4556-b16b-043788f6111d, name=222, type=TRAINING}
