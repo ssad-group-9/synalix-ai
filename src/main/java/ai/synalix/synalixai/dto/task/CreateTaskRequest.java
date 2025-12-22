@@ -3,7 +3,9 @@ package ai.synalix.synalixai.dto.task;
 import ai.synalix.synalixai.enums.TaskType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,8 @@ import java.util.UUID;
  * Request DTO for creating a new task
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class CreateTaskRequest {
 
     @NotBlank(message = "Task name is required")

@@ -18,9 +18,28 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      */
     List<Task> findByCreatedBy(UUID createdBy);
 
+    /**
+     * Find tasks by status
+     *
+     * @param status the status of the tasks to find
+     * @return a list of tasks with the specified status
+     */
     List<Task> findByStatus(ai.synalix.synalixai.enums.TaskStatus status);
 
+    /**
+     * Find tasks by type
+     *
+     * @param type the type of the tasks to find
+     * @return a list of tasks with the specified type
+     */
     List<Task> findByType(ai.synalix.synalixai.enums.TaskType type);
 
+    /**
+     * Find tasks by status and type
+     *
+     * @param status the status of the tasks to find
+     * @param type the type of the tasks to find
+     * @return a list of tasks with the specified status and type
+     */
     List<Task> findByStatusAndType(ai.synalix.synalixai.enums.TaskStatus status, ai.synalix.synalixai.enums.TaskType type);
 }

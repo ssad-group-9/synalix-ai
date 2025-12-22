@@ -10,8 +10,7 @@ import ai.synalix.synalixai.exception.ApiException;
 import ai.synalix.synalixai.repository.DatasetRepository;
 import ai.synalix.synalixai.repository.ModelRepository;
 import ai.synalix.synalixai.repository.TaskRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +24,8 @@ import java.util.UUID;
  * Task management service
  */
 @Service
+@Slf4j
 public class TaskService {
-
-    private static final Logger logger = LoggerFactory.getLogger(TaskService.class);
 
     private final TaskRepository taskRepository;
     private final ModelRepository modelRepository;
@@ -74,14 +72,14 @@ public class TaskService {
         task.setCreatedBy(userId);
         task.setStatus(TaskStatus.PENDING);
 
+        // Create a new mutable config map to avoid mutating the input parameter
+        var taskConfig = config != null ? new java.util.HashMap<>(config) : new java.util.HashMap<String, Object>();
+
         // Add gpuIds to config if present
         if (gpuIds != null && !gpuIds.isEmpty()) {
-            if (config == null) {
-                config = new java.util.HashMap<>();
-            }
-            config.put("gpuIds", gpuIds);
+            taskConfig.put("gpuIds", gpuIds);
         }
-        task.setConfig(config);
+        task.setConfig(taskConfig);
 
         var savedTask = taskRepository.save(task);
 
@@ -94,7 +92,7 @@ public class TaskService {
         );
         auditService.logAsync(AuditOperationType.TASK_CREATE, userId, savedTask.getId().toString(), details);
 
-        logger.info("Task created successfully: id={}, name={}, type={}", 
+        log.info("Task created successfully: id={}, name={}, type={}", 
                    savedTask.getId(), savedTask.getName(), savedTask.getType());
 
         return savedTask;
@@ -142,7 +140,7 @@ public class TaskService {
         // Audit log
         auditService.logAsync(AuditOperationType.TASK_STOP, userId, taskId.toString(), Map.of("previousStatus", previousStatus));
 
-        logger.info("Task stopped successfully: id={}", taskId);
+        log.info("Task stopped successfully: id={}", taskId);
         return savedTask;
     }
 
