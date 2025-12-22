@@ -128,7 +128,8 @@ public enum AuditOperationType {
      * Checkpoint upload completed (from training service)
      */
     CHECKPOINT_UPLOAD_COMPLETED
-     * Create message
+    /**
+     *  Create message
      */
     MESSAGE_CREATE,
 
