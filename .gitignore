@@ -38,4 +38,4 @@ out/
 .vscode/
 
 *.local
-*.ps
+*.ps1
