@@ -15,12 +15,12 @@ services:
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
       # Optional: Add init scripts directory if needed
-      # - ./db/init:/docker-entrypoint-initdb.d
+      - ./db/init:/docker-entrypoint-initdb.d
     networks:
       - synalix-dev-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-synalix_user} -d synalix_ai_dev"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-synalix_user} -d synalix_ai_dev" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,7 +41,7 @@ services:
       - synalix-dev-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -63,7 +63,7 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: [ "CMD", "mc", "ready", "local" ]
       interval: 10s
       timeout: 5s
       retries: 5
