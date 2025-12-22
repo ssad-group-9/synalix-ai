@@ -48,7 +48,17 @@ public enum AuditOperationType {
      * Status update
      */
     STATUS_UPDATE,
-    
+
+    /**
+     * Create task
+     */
+    TASK_CREATE,
+
+    /**
+     * Stop task
+     */
+    TASK_STOP,
+
     /**
      * Token refresh
      */

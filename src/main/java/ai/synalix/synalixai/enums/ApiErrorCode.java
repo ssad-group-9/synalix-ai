@@ -51,6 +51,14 @@ public enum ApiErrorCode {
     PRESIGNED_URL_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to generate presigned URL"),
     BUCKET_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "Storage bucket not found"),
 
+    // Task Errors (4xx)
+    TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "Task not found"),
+    TASK_ACCESS_DENIED(HttpStatus.FORBIDDEN, "Access to task denied"),
+    TASK_CANNOT_STOP(HttpStatus.BAD_REQUEST, "Task cannot be stopped in current status"),
+
+    // Resource Errors (4xx)
+    RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "Resource not found"),
+
     // System Errors (5xx)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
 
