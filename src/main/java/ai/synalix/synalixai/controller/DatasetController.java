@@ -108,6 +108,15 @@ public class DatasetController {
         return ResponseEntity.ok(presignedUrl);
     }
 
+    @PostMapping("/{id}/update-dataset")
+    public ResponseEntity<Boolean> updateDataset(
+            @Valid @PathVariable UUID id,
+            @AuthenticationPrincipal JwtUserPrincipal principal) {
+        var userId = principal.getId();
+        var dataset = datasetService.updateDataset(id, userId);
+        return ResponseEntity.status(HttpStatus.OK).body(dataset);
+    }
+
     /**
      * Delete a dataset
      *

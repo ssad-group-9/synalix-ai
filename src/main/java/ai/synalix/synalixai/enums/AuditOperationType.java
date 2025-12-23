@@ -48,7 +48,17 @@ public enum AuditOperationType {
      * Status update
      */
     STATUS_UPDATE,
-    
+
+    /**
+     * Create task
+     */
+    TASK_CREATE,
+
+    /**
+     * Stop task
+     */
+    TASK_STOP,
+
     /**
      * Token refresh
      */
@@ -117,5 +127,15 @@ public enum AuditOperationType {
     /**
      * Checkpoint upload completed (from training service)
      */
-    CHECKPOINT_UPLOAD_COMPLETED
+    CHECKPOINT_UPLOAD_COMPLETED,
+            
+    /**
+     *  Create message
+     */
+    MESSAGE_CREATE,
+
+    /**
+     * Delete message
+     */
+    MESSAGE_DELETE
 }

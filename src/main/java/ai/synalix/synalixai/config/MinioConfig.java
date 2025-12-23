@@ -33,6 +33,9 @@ public class MinioConfig {
     @Value("${minio.bucket.checkpoints}")
     private String checkpointsBucket;
 
+    @Value("${minio.bucket.logs}")
+    private String logsBucket;
+
     @Value("${minio.presigned-url-expiry.upload}")
     private int presignedUrlUploadExpiry;
 
@@ -67,6 +70,7 @@ public class MinioConfig {
         try {
             createBucketIfNotExists(client, datasetsBucket);
             createBucketIfNotExists(client, checkpointsBucket);
+            createBucketIfNotExists(client, logsBucket);
             log.info("MinIO buckets initialized successfully");
         } catch (Exception e) {
             log.error("Failed to initialize MinIO buckets: {}", e.getMessage());
