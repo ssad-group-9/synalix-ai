@@ -15,7 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,18 +41,24 @@ public class DatasetService {
     private final MinioService minioService;
     private final AuditService auditService;
     private final MinioConfig minioConfig;
+    private final RestTemplate restTemplate;
+
+    @Value("${app.backend-base-url}")
+    private String backendBaseUrl;
 
     @Autowired
     public DatasetService(DatasetRepository datasetRepository,
-                          UserRepository userRepository,
-                          MinioService minioService,
-                          AuditService auditService,
-                          MinioConfig minioConfig) {
+            UserRepository userRepository,
+            MinioService minioService,
+            AuditService auditService,
+            MinioConfig minioConfig,
+            RestTemplate restTemplate) {
         this.datasetRepository = datasetRepository;
         this.userRepository = userRepository;
         this.minioService = minioService;
         this.auditService = auditService;
         this.minioConfig = minioConfig;
+        this.restTemplate = restTemplate;
     }
 
     /**
@@ -109,9 +121,8 @@ public class DatasetService {
                 savedDataset.getId().toString(),
                 savedDataset.getName(),
                 "",
-                0L
-        );
- 
+                0L);
+
         return convertToResponse(savedDataset);
     }
 
@@ -128,7 +139,7 @@ public class DatasetService {
         String storagePath = minioService.generateDatasetStorageKey(datasetId, dataset.getName());
         dataset.setPath(storagePath);
         datasetRepository.save(dataset);
-        
+
         var presignedUrl = minioService.generateDatasetUploadUrl(datasetId, dataset.getName());
 
         log.info("Upload URL generated for dataset: {} by user {}", datasetId, userId);
@@ -137,8 +148,7 @@ public class DatasetService {
                 AuditOperationType.DATASET_UPLOAD_URL_GENERATED,
                 userId,
                 datasetId.toString(),
-                Map.of("expiresAt", presignedUrl.getExpiresAt().toString())
-        );
+                Map.of("expiresAt", presignedUrl.getExpiresAt().toString()));
 
         return presignedUrl;
     }
@@ -160,10 +170,52 @@ public class DatasetService {
         auditService.logDatasetDownload(
                 userId,
                 dataset.getId().toString(),
-                dataset.getName()
-        );
+                dataset.getName());
 
         return presignedUrl;
+    }
+
+    /**
+     * Update dataset by sending generated download URL to backend
+     * /api/data/upload_url.
+     * The URL parameter is obtained from generateDownloadUrl().
+     *
+     * @param datasetId 数据集ID
+     * @param userId    操作用户ID
+     * @return 是否更新成功
+     */
+    @Transactional
+    public boolean updateDataset(UUID datasetId, UUID userId) {
+        var downloadUrl = generateDownloadUrl(datasetId, userId).getUrl();
+        if (downloadUrl == null || downloadUrl.isBlank()) {
+            throw new ApiException(ApiErrorCode.INTERNAL_SERVER_ERROR, "Failed to generate download URL");
+        }
+
+        var base = backendBaseUrl.endsWith("/") ? backendBaseUrl + "api/data/upload_url"
+                : backendBaseUrl + "/api/data/upload_url";
+
+        // 以 JSON 请求体提交，避免 & 被编码成 %xx
+        var body = Map.of("url", downloadUrl);
+        try {
+            ResponseEntity<Void> resp = restTemplate.exchange(
+                    base,
+                    HttpMethod.POST,
+                    new HttpEntity<>(body),
+                    Void.class);
+            if (!resp.getStatusCode().is2xxSuccessful()) {
+                throw new ApiException(ApiErrorCode.INTERNAL_SERVER_ERROR, "Backend upload_url failed");
+            }
+        } catch (Exception e) {
+            throw new ApiException(ApiErrorCode.INTERNAL_SERVER_ERROR, "Backend upload_url failed");
+        }
+
+        auditService.logOperation(
+                AuditOperationType.DATASET_UPDATE,
+                userId,
+                datasetId.toString(),
+                Map.of("downloadUrl", downloadUrl));
+
+        return true;
     }
 
     /**
@@ -184,10 +236,11 @@ public class DatasetService {
             log.info("Dataset file deleted from MinIO: {} for dataset: {}", filePath, datasetName);
         } catch (Exception e) {
             // Log the error and do not delete the database record
-            log.error("Failed to delete dataset file from MinIO: {} for dataset: {}. Database record NOT deleted. Operation aborted.", 
-                     filePath, datasetName, e);
-            throw new ApiException(ApiErrorCode.DATASET_DELETE_NOT_ALLOWED, 
-                "Failed to delete dataset file from MinIO. Database record not deleted. Please retry or contact support.");
+            log.error(
+                    "Failed to delete dataset file from MinIO: {} for dataset: {}. Database record NOT deleted. Operation aborted.",
+                    filePath, datasetName, e);
+            throw new ApiException(ApiErrorCode.DATASET_DELETE_NOT_ALLOWED,
+                    "Failed to delete dataset file from MinIO. Database record not deleted. Please retry or contact support.");
         }
         datasetRepository.delete(dataset);
 
@@ -215,17 +268,16 @@ public class DatasetService {
         }
         var savedDataset = datasetRepository.save(dataset);
 
-        log.info("Dataset size updated: {} to {} bytes by user {}. Path set to: {}", datasetId, size, userId, dataset.getPath());
+        log.info("Dataset size updated: {} to {} bytes by user {}. Path set to: {}", datasetId, size, userId,
+                dataset.getPath());
         auditService.logDatasetUpdate(
-            userId,
-            datasetId.toString(),
-            dataset.getName(),
-            Map.of(
-                    "name", dataset.getName(),
-                    "size", size,
-                    "path", path
-            )
-        );
+                userId,
+                datasetId.toString(),
+                dataset.getName(),
+                Map.of(
+                        "name", dataset.getName(),
+                        "size", size,
+                        "path", path));
         return convertToResponse(savedDataset);
     }
 
@@ -261,7 +313,6 @@ public class DatasetService {
                 dataset.getSize(),
                 dataset.getPath(),
                 dataset.getOwner().getId(),
-                createdAt
-        );
+                createdAt);
     }
 }

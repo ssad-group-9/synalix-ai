@@ -63,9 +63,11 @@ public class TaskService {
     }
 
     @Transactional
-    public Task submitTraining(Task task, Map<String, Object> config, UUID userId) {
+    public Task submitTask(Task task, Map<String, Object> config, UUID userId) {
         // POST config to backend
-        var url = backendBaseUrl.endsWith("/") ? backendBaseUrl + "api/train" : backendBaseUrl + "/api/train";
+        String taskType = task.getType().equals(TaskType.TRAINING) ? "train" : "infer";
+        var url = backendBaseUrl.endsWith("/") ? backendBaseUrl + "api/" + taskType
+                : backendBaseUrl + "/api/" + taskType;
         TrainResponse resp;
         try {
             resp = restTemplate.postForObject(url, config, TrainResponse.class);
@@ -105,8 +107,11 @@ public class TaskService {
         }
 
         // Validate Dataset exists
-        if (!datasetRepository.existsById(datasetId)) {
+        if (datasetId != null && !datasetRepository.existsById(datasetId)) {
             throw new ApiException(ApiErrorCode.DATASET_NOT_FOUND);
+        }
+        if (datasetId == null) {
+            datasetId = UUID.fromString("00000000-0000-0000-0000-000000000000");
         }
 
         // Create task
@@ -137,7 +142,7 @@ public class TaskService {
                 "datasetId", datasetId);
         auditService.logAsync(AuditOperationType.TASK_CREATE, userId, savedTask.getId().toString(), details);
 
-        savedTask = submitTraining(savedTask, config, userId);
+        savedTask = submitTask(savedTask, config, userId);
 
         logger.info("Task created successfully: id={}, name={}, type={}",
                 savedTask.getId(), savedTask.getName(), savedTask.getType());

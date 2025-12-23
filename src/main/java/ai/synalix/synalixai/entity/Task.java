@@ -51,8 +51,7 @@ public class Task {
     @Column(name = "model_id", nullable = false)
     private UUID modelId;
 
-    @NotNull(message = "Dataset ID cannot be null")
-    @Column(name = "dataset_id", nullable = false)
+    @Column(name = "dataset_id", nullable = true)
     private UUID datasetId;
 
     @JdbcTypeCode(SqlTypes.JSON)

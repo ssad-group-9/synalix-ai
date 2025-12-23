@@ -24,7 +24,6 @@ public class CreateTaskRequest {
     @NotNull(message = "Model ID is required")
     private UUID modelId;
 
-    @NotNull(message = "Dataset ID is required")
     private UUID datasetId;
 
     private List<Integer> gpuIds;

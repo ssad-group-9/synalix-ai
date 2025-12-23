@@ -85,4 +85,6 @@ public class ModelController {
         modelService.deleteModel(id, adminId);
         return ResponseEntity.noContent().build();
     }
+
+    
 }
