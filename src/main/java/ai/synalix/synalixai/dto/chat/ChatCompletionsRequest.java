@@ -2,7 +2,6 @@ package ai.synalix.synalixai.dto.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,6 +17,10 @@ import java.util.List;
 @NoArgsConstructor
 public class ChatCompletionsRequest {
 
+    /**
+     * Backend task id
+     */
+    @NotBlank(message = "task_id cannot be blank")
     @JsonProperty("task_id")
     private String taskId;
 
@@ -26,10 +29,14 @@ public class ChatCompletionsRequest {
     @JsonProperty("completions")
     private Completions completions;
 
+    /**
+     * Completions payload
+     */
     @Data
     @NoArgsConstructor
     public static class Completions {
-        @NotBlank
+
+        @NotBlank(message = "model cannot be blank")
         private String model;
 
         @NotNull
@@ -40,13 +47,19 @@ public class ChatCompletionsRequest {
         private Integer maxCompletionTokens;
     }
 
+    /**
+     * Chat message supports:
+     * - content as string
+     * - content as array of parts (text/image_url) in JSON
+     */
     @Data
     @NoArgsConstructor
     public static class Message {
-        @NotBlank
+
+        @NotBlank(message = "role cannot be blank")
         private String role;
 
-        @NotBlank
+        @NotNull(message = "content cannot be null")
         private JsonNode content;
     }
 }
