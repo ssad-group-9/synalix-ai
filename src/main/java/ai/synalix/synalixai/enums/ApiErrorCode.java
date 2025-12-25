@@ -4,10 +4,11 @@ import org.springframework.http.HttpStatus;
 
 /**
  * API error code enumeration
- * Defines all possible error types with corresponding HTTP status codes and messages
+ * Defines all possible error types with corresponding HTTP status codes and
+ * messages
  */
 public enum ApiErrorCode {
-    
+
     // Authentication & Authorization Errors (4xx)
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Authentication required"),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "Invalid username or password"),
@@ -16,12 +17,12 @@ public enum ApiErrorCode {
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Token has expired"),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "Invalid token"),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "Invalid refresh token"),
-    
+
     // Validation Errors (4xx)
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "Validation failed"),
     INVALID_REQUEST_FORMAT(HttpStatus.BAD_REQUEST, "Invalid request format"),
     MISSING_REQUIRED_FIELD(HttpStatus.BAD_REQUEST, "Missing required field"),
-    
+
     // Business Logic Errors (4xx)
     USERNAME_EXISTS(HttpStatus.CONFLICT, "Username already exists"),
     EMAIL_EXISTS(HttpStatus.CONFLICT, "Email already exists"),
@@ -32,24 +33,30 @@ public enum ApiErrorCode {
     CANNOT_DISABLE_SELF(HttpStatus.FORBIDDEN, "Cannot disable your own account"),
     CANNOT_DELETE_ADMIN(HttpStatus.FORBIDDEN, "Cannot delete administrator accounts"),
     MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "Message not found"),
-    
+
     // Dataset Errors (4xx)
     DATASET_NOT_FOUND(HttpStatus.NOT_FOUND, "Dataset not found"),
     DATASET_NAME_EXISTS(HttpStatus.CONFLICT, "Dataset name already exists"),
     DATASET_ACCESS_DENIED(HttpStatus.FORBIDDEN, "Access to dataset denied"),
     DATASET_UPLOAD_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "Dataset upload not allowed in current status"),
     DATASET_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "Dataset cannot be deleted in current status"),
-    
+
     // Model Errors (4xx)
     MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, "Model not found"),
     MODEL_NAME_EXISTS(HttpStatus.CONFLICT, "Model name already exists"),
     MODEL_ACCESS_DENIED(HttpStatus.FORBIDDEN, "Access to model denied"),
     CHECKPOINT_NOT_FOUND(HttpStatus.NOT_FOUND, "Model checkpoint not found"),
-    
+
     // Storage Errors (5xx)
     STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Storage service error"),
     PRESIGNED_URL_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to generate presigned URL"),
     BUCKET_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "Storage bucket not found"),
+
+    // FILE NOT FOUND (404)
+    FILE_ID_MISSING(HttpStatus.BAD_REQUEST, "fileId is required"),
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "File not found"),
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "File upload failed"),
+    TYPE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "only image/* content type is supported"),
 
     // Task Errors (4xx)
     TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "Task not found"),

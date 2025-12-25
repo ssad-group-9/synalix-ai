@@ -137,5 +137,8 @@ public enum AuditOperationType {
     /**
      * Delete message
      */
-    MESSAGE_DELETE
+    MESSAGE_DELETE,
+
+
+    FILE_UPLOAD_URL_GENERATED,
 }

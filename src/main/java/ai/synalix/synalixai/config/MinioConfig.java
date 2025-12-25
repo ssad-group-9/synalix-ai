@@ -33,6 +33,9 @@ public class MinioConfig {
     @Value("${minio.bucket.checkpoints}")
     private String checkpointsBucket;
 
+    @Value("${minio.bucket.files}")
+    private String filesBucket;
+
     @Value("${minio.bucket.logs}")
     private String logsBucket;
 
@@ -54,9 +57,9 @@ public class MinioConfig {
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
                 .build();
-        
+
         initBuckets(client);
-        
+
         return client;
     }
 
@@ -71,6 +74,7 @@ public class MinioConfig {
             createBucketIfNotExists(client, datasetsBucket);
             createBucketIfNotExists(client, checkpointsBucket);
             createBucketIfNotExists(client, logsBucket);
+            createBucketIfNotExists(client, filesBucket);
             log.info("MinIO buckets initialized successfully");
         } catch (Exception e) {
             log.error("Failed to initialize MinIO buckets: {}", e.getMessage());

@@ -145,8 +145,8 @@ public class CheckpointService {
             throw new ApiException(ApiErrorCode.TASK_NOT_FOUND, "task_id cannot be blank");
         }
 
-        // 1) 从 MinIO 获取下载链接（这里假定 path 可直接作为 objectKey 使用）
-        var uploadUrl = minioService.generateCheckpointUploadUrl(checkpointId).getUrl();
+        // 1) 从 MinIO 获取下载链接（这里假定 path 可直接作为 storageKey 使用）
+        var uploadUrl = minioService.generateCheckpointUploadUrl(checkpointId, checkpoint.getName() + ".zip").getUrl();
         if (uploadUrl == null || uploadUrl.isBlank()) {
             throw new ApiException(ApiErrorCode.INTERNAL_SERVER_ERROR, "Failed to generate checkpoint download url");
         }
@@ -164,7 +164,9 @@ public class CheckpointService {
             ResponseEntity<Object> backendResp = restTemplate.exchange(base, HttpMethod.POST,
                     new org.springframework.http.HttpEntity<>(req), Object.class);
             var downloadUrl = minioService
-                    .generateCheckpointDownloadUrl(minioService.generateCheckpointStorageKey(checkpointId)).getUrl();
+                    .generateCheckpointDownloadUrl(minioService.generateCheckpointStorageKey(checkpointId,
+                            checkpoint.getName() + ".zip"))
+                    .getUrl();
             return new CheckpointDownloadUrlResponse(downloadUrl, backendResp.getBody());
         } catch (Exception e) {
             throw new ApiException(ApiErrorCode.INTERNAL_SERVER_ERROR, "Backend checkpoint download failed");
