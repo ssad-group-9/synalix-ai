@@ -20,7 +20,6 @@ public class ChatCompletionsRequest {
     /**
      * Backend task id
      */
-    @NotBlank(message = "task_id cannot be blank")
     @JsonProperty("task_id")
     private String taskId;
 
