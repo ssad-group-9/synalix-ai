@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 响应 DTO：后端 /api/chat/completions 返回结构
@@ -44,7 +45,7 @@ public class ChatCompletionsResponse {
     @NoArgsConstructor
     public static class Message {
         private String role;
-        private String content;
+        private List<Map<String, String>> content;
         @JsonProperty("tool_calls")
         private Object toolCalls; // 如需可改为具体结构
     }
