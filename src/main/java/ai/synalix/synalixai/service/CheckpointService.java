@@ -159,7 +159,7 @@ public class CheckpointService {
         try {
             var req = new BackendCheckpointDownloadRequest(
                     taskId,
-                    checkpointId.toString(),
+                    checkpoint.getName(),
                     uploadUrl);
             ResponseEntity<Object> backendResp = restTemplate.exchange(base, HttpMethod.POST,
                     new org.springframework.http.HttpEntity<>(req), Object.class);
