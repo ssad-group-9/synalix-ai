@@ -1,6 +1,8 @@
 package ai.synalix.synalixai.dto.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -42,7 +44,7 @@ public class ChatCompletionsRequest {
     @NoArgsConstructor
     public static class Message {
         @NotBlank
-        private String role;
+        private JsonNode role;
 
         @NotBlank
         private String content;
