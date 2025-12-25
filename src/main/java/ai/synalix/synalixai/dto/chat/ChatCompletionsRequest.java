@@ -44,9 +44,9 @@ public class ChatCompletionsRequest {
     @NoArgsConstructor
     public static class Message {
         @NotBlank
-        private JsonNode role;
+        private String role;
 
         @NotBlank
-        private String content;
+        private JsonNode content;
     }
 }
