@@ -101,7 +101,7 @@ public class MinioService {
      * @return the storage key
      */
     public String generateCheckpointStorageKey(UUID checkpointId) {
-        return String.format("checkpoints/%s/model.bin", checkpointId.toString());
+        return String.format("checkpoints/%s/model.zip", checkpointId.toString());
     }
 
     /**
