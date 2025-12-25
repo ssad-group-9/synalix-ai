@@ -20,6 +20,7 @@ public class CheckpointResponse {
     private UUID modelId;
     private String name;
     private String path;
+    private String taskId;
     private CheckpointType type;
     private LocalDateTime createdAt;
 }

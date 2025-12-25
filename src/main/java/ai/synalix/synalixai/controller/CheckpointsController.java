@@ -1,6 +1,7 @@
 package ai.synalix.synalixai.controller;
 
 import ai.synalix.synalixai.dto.model.BackendCheckpointsResponse;
+import ai.synalix.synalixai.dto.model.CheckpointDownloadUrlResponse;
 import ai.synalix.synalixai.dto.model.CheckpointQueryRequest;
 import ai.synalix.synalixai.dto.model.CheckpointResponse;
 import ai.synalix.synalixai.config.JwtUserPrincipal;
@@ -39,5 +40,23 @@ public class CheckpointsController {
         var userId = principal.getId();
         var list = checkpointService.fetchAndStoreBackendCheckpoints(modelId);
         return ResponseEntity.ok(list);
+    }
+
+    /**
+     * Generate checkpoint download URL from MinIO, notify backend
+     * /api/checkpoints/download,
+     * and return download URL to frontend.
+     *
+     * @param checkpointId checkpoint id
+     * @param taskId       backend task id
+     */
+    @GetMapping("/{checkpointId}/download-url")
+    public ResponseEntity<CheckpointDownloadUrlResponse> getCheckpointDownloadUrl(
+            @PathVariable @NotNull UUID checkpointId,
+            @AuthenticationPrincipal JwtUserPrincipal principal) {
+
+        var userId = principal.getId();
+        var resp = checkpointService.prepareCheckpointDownload(checkpointId);
+        return ResponseEntity.ok(resp);
     }
 }

@@ -1,5 +1,7 @@
 package ai.synalix.synalixai.service;
 
+import ai.synalix.synalixai.dto.model.BackendCheckpointDownloadRequest;
+import ai.synalix.synalixai.dto.model.CheckpointDownloadUrlResponse;
 import ai.synalix.synalixai.dto.model.CheckpointResponse;
 import ai.synalix.synalixai.dto.model.CheckpointQueryRequest;
 import ai.synalix.synalixai.entity.Checkpoint;
@@ -10,8 +12,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+
 import ai.synalix.synalixai.repository.ModelRepository;
+import ai.synalix.synalixai.dto.model.BackendCheckpointDownloadRequest;
 import ai.synalix.synalixai.dto.model.BackendCheckpointsResponse;
+import ai.synalix.synalixai.dto.model.CheckpointDownloadUrlResponse;
+
+import ai.synalix.synalixai.service.MinioService;
+import org.springframework.http.HttpMethod;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,16 +38,18 @@ public class CheckpointService {
     private final CheckpointRepository checkpointRepository;
     private final ModelRepository modelRepository;
     private final RestTemplate restTemplate;
+    private final MinioService minioService;
 
     @Value("${app.backend-base-url}")
     private String backendBaseUrl;
 
     @Autowired
     public CheckpointService(CheckpointRepository checkpointRepository, RestTemplate restTemplate,
-            ModelRepository modelRepository) {
+            ModelRepository modelRepository, MinioService minioService) {
         this.checkpointRepository = checkpointRepository;
         this.restTemplate = restTemplate;
         this.modelRepository = modelRepository;
+        this.minioService = minioService;
     }
 
     /**
@@ -102,6 +115,8 @@ public class CheckpointService {
                     cp.setType(type);
                     cp.setPath(path);
                     cp.setName(extractName(taskId, path));
+                    cp.setTaskId(taskId);
+                    cp.setCreatedAt(extractTime(taskId));
                     saved.add(cp);
                 }
             });
@@ -109,6 +124,51 @@ public class CheckpointService {
 
         var persisted = checkpointRepository.saveAll(saved);
         return persisted.stream().map(this::toResponse).toList();
+    }
+
+    /**
+     * Generate MinIO download URL for checkpoint, notify backend
+     * /api/checkpoints/download,
+     * then return download URL to frontend.
+     *
+     * @param checkpointId checkpoint UUID
+     * @param taskId       backend task id
+     * @return response with minio download url
+     */
+    @Transactional(readOnly = true)
+    public CheckpointDownloadUrlResponse prepareCheckpointDownload(UUID checkpointId) {
+        var checkpoint = checkpointRepository.findById(checkpointId)
+                .orElseThrow(() -> new ApiException(ApiErrorCode.RESOURCE_NOT_FOUND,
+                        Map.of("checkpointId", checkpointId.toString())));
+        var taskId = checkpoint.getTaskId();
+        if (taskId == null || taskId.isBlank()) {
+            throw new ApiException(ApiErrorCode.TASK_NOT_FOUND, "task_id cannot be blank");
+        }
+
+        // 1) 从 MinIO 获取下载链接（这里假定 path 可直接作为 objectKey 使用）
+        var uploadUrl = minioService.generateCheckpointUploadUrl(checkpointId).getUrl();
+        if (uploadUrl == null || uploadUrl.isBlank()) {
+            throw new ApiException(ApiErrorCode.INTERNAL_SERVER_ERROR, "Failed to generate checkpoint download url");
+        }
+
+        // 2) 通知后端 /api/checkpoints/download
+        var base = backendBaseUrl.endsWith("/")
+                ? backendBaseUrl + "api/checkpoints/download"
+                : backendBaseUrl + "/api/checkpoints/download";
+
+        try {
+            var req = new BackendCheckpointDownloadRequest(
+                    taskId,
+                    checkpointId.toString(),
+                    uploadUrl);
+            ResponseEntity<Object> backendResp = restTemplate.exchange(base, HttpMethod.POST,
+                    new org.springframework.http.HttpEntity<>(req), Object.class);
+            var downloadUrl = minioService
+                    .generateCheckpointDownloadUrl(minioService.generateCheckpointStorageKey(checkpointId)).getUrl();
+            return new CheckpointDownloadUrlResponse(downloadUrl, backendResp.getBody());
+        } catch (Exception e) {
+            throw new ApiException(ApiErrorCode.INTERNAL_SERVER_ERROR, "Backend checkpoint download failed");
+        }
     }
 
     /**
@@ -135,6 +195,26 @@ public class CheckpointService {
             }
         }
         return taskId != null ? taskId : "checkpoint";
+    }
+
+    /**
+     * 从 taskId 中提取时间戳
+     */
+    private LocalDateTime extractTime(String taskId) {
+        if (taskId != null && !taskId.isBlank()) {
+            try {
+                var parts = taskId.split("_");
+                if (parts.length > 0) {
+                    var dateTimePart = parts[0];
+                    var formatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+                    var localDateTime = java.time.LocalDateTime.parse(dateTimePart, formatter);
+                    return localDateTime;
+                }
+            } catch (Exception e) {
+                // Log the exception if necessary
+            }
+        }
+        return LocalDateTime.now();
     }
 
     public CheckpointResponse toResponse(Checkpoint c) {

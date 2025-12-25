@@ -62,6 +62,13 @@ public class Checkpoint {
     private UUID modelId;
 
     /**
+     * Associated task id this checkpoint belongs to.
+     */
+    @NotNull(message = "Task ID cannot be null")
+    @Column(name = "task_id", nullable = false)
+    private String taskId;
+
+    /**
      * Created timestamp.
      */
     @CreationTimestamp
