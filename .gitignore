@@ -39,3 +39,4 @@ out/
 
 *.local
 *.ps1
+.gradle-home
