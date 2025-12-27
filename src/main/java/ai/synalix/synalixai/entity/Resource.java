@@ -16,20 +16,18 @@ import java.time.LocalDateTime;
  * Resource entity class (GPU)
  */
 @Entity
-@Table(name = "resources", 
-       uniqueConstraints = @UniqueConstraint(columnNames = "name"))
+@Table(name = "resources")
 @Data
 @NoArgsConstructor
 public class Resource {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
     private Long id;
 
     @NotBlank(message = "Resource name cannot be blank")
     @Size(max = 100, message = "Resource name length cannot exceed 100 characters")
-    @Column(name = "name", unique = true, nullable = false, length = 100)
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
     @NotNull(message = "Resource status cannot be null")
