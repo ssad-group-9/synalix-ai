@@ -61,7 +61,6 @@ public class GpuController {
      * Get GPU permissions for a specific user (Admin only)
      */
     @GetMapping("/permissions/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserGpuPermissionResponse> getUserGpuPermission(
             @PathVariable UUID userId) {
         var permission = gpuPermissionService.getUserGpuPermission(userId);
@@ -89,29 +88,11 @@ public class GpuController {
         response.setId(resourceDetail.getId());
         response.setName(resourceDetail.getName());
         response.setStatus(resourceDetail.getStatus());
-        
-        // Parse memory information from "memoryUsed" string like "447/15360MB"
-        if (resourceDetail.getMemoryUsed() != null && resourceDetail.getMemoryUsed().contains("/")) {
-            try {
-                var memoryParts = resourceDetail.getMemoryUsed().replace("MB", "").split("/");
-                var memoryUsed = Integer.parseInt(memoryParts[0].trim());
-                var memoryTotal = Integer.parseInt(memoryParts[1].trim());
-                response.setMemoryUsed(memoryUsed);
-                response.setMemoryTotal(memoryTotal);
-                response.setMemoryFree(memoryTotal - memoryUsed);
-            } catch (Exception e) {
-                // If parsing fails, set defaults
-                response.setMemoryUsed(0);
-                response.setMemoryTotal(0);
-                response.setMemoryFree(0);
-            }
-        } else {
-            response.setMemoryUsed(0);
-            response.setMemoryTotal(0);
-            response.setMemoryFree(0);
-        }
-        
+        response.setMemoryUsed(resourceDetail.getMemoryUsed());
+        response.setMemoryTotal(resourceDetail.getMemoryTotal());
+        response.setMemoryUsed(resourceDetail.getMemoryUsed());
+        response.setMemoryFree(resourceDetail.getMemoryTotal() - resourceDetail.getMemoryUsed());
+
         return response;
     }
 }
-

@@ -101,7 +101,6 @@ public class CheckpointService {
         if (resp == null || resp.getTasks() == null || resp.getTasks().isEmpty()) {
             throw new ApiException(ApiErrorCode.RESOURCE_NOT_FOUND, "No checkpoints found from backend");
         }
-
         var saved = new java.util.ArrayList<Checkpoint>();
         // tasks: key = type(lora/full), value = map(taskId -> List<path>)
         resp.getTasks().forEach((typeKey, taskMap) -> {
@@ -122,6 +121,7 @@ public class CheckpointService {
             });
         });
 
+        checkpointRepository.deleteByModelId(modelId);
         var persisted = checkpointRepository.saveAll(saved);
         return persisted.stream().map(this::toResponse).toList();
     }

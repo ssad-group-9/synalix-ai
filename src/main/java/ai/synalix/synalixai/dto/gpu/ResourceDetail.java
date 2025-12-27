@@ -28,10 +28,16 @@ public class ResourceDetail {
     private String name;
 
     /**
-     * Memory usage like "447/15360MB"
+     * Memory usage like "447"
      */
     @JsonProperty("memory_used")
-    private String memoryUsed;
+    private Integer memoryUsed;
+
+    /**
+     * Memory usage like"15360"
+     */
+    @JsonProperty("memory_total")
+    private Integer memoryTotal;
 
     /**
      * Utilization like "0%"

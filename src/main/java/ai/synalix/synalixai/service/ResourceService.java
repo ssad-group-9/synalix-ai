@@ -61,7 +61,23 @@ public class ResourceService {
                 ? backendBaseUrl + "api/gpu/status"
                 : backendBaseUrl + "/api/gpu/status";
         try {
-            return restTemplate.getForObject(url, GpuStatusResponse.class);
+            var response = restTemplate.getForObject(url, GpuStatusResponse.class);
+            if (response != null && response.getGpuDetails() != null) {
+                var resources = response.getGpuDetails().stream()
+                        .map(detail -> {
+                            var r = new Resource();
+                            r.setId(detail.getId());
+                            r.setName(detail.getName());
+                            r.setStatus(detail.getStatus());
+                            r.setMemoryTotal(detail.getMemoryTotal());
+                            r.setMemoryUsed(detail.getMemoryUsed());
+                            return r;
+                        })
+                        .toList();
+                resourceRepository.deleteAll();
+                resourceRepository.saveAll(resources);
+            }
+            return response;
         } catch (RestClientException ex) {
             throw new ApiException(ApiErrorCode.INTERNAL_SERVER_ERROR, "Failed to fetch GPU status");
         }

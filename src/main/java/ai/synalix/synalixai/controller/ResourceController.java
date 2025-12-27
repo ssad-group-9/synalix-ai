@@ -44,9 +44,8 @@ public class ResourceController {
         var response = new ResourceResponse();
         response.setId(resource.getId());
         response.setName(resource.getName());
-        var memoryParts = resource.getMemoryUsed().replace("MB", "").split("/");
-        response.setMemoryUsed(Integer.parseInt(memoryParts[0].trim()));
-        response.setMemoryTotal(Integer.parseInt(memoryParts[1].trim()));
+        response.setMemoryUsed(resource.getMemoryUsed());
+        response.setMemoryTotal(resource.getMemoryTotal());
         response.setStatus(resource.getStatus());
         return response;
     }
