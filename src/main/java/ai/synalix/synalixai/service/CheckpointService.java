@@ -208,8 +208,10 @@ public class CheckpointService {
                 var parts = taskId.split("_");
                 if (parts.length > 0) {
                     var dateTimePart = parts[0];
-                    var formatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
-                    var localDateTime = java.time.LocalDateTime.parse(dateTimePart, formatter);
+                    var timestamp = Long.parseLong(dateTimePart);
+                    var localDateTime = java.time.LocalDateTime.ofInstant(
+                            java.time.Instant.ofEpochSecond(timestamp),
+                            java.time.ZoneId.systemDefault());
                     return localDateTime;
                 }
             } catch (Exception e) {
